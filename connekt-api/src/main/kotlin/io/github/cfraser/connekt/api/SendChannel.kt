@@ -18,15 +18,16 @@ package io.github.cfraser.connekt.api
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.SendChannel as KotlinxCoroutinesSendChannel
 import kotlinx.coroutines.future.future
 
 /**
- * [SendChannel] is a [kotlinx.coroutines.channels.SendChannel] plus [sendAsync] which enables
- * idiomatic usage from *Java* code.
+ * [SendChannel] is a [KotlinxCoroutinesSendChannel] plus [sendAsync] which enables idiomatic
+ * non-blocking usage from *Java* code.
  *
- * @see kotlinx.coroutines.channels.SendChannel
+ * @see KotlinxCoroutinesSendChannel
  */
-interface SendChannel<in E> : kotlinx.coroutines.channels.SendChannel<E> {
+interface SendChannel<in E> : KotlinxCoroutinesSendChannel<E> {
 
   /**
    * Asynchronously [send] the [element] to this channel.
@@ -40,12 +41,12 @@ interface SendChannel<in E> : kotlinx.coroutines.channels.SendChannel<E> {
   companion object {
 
     /**
-     * Convert the [kotlinx.coroutines.channels.SendChannel] to a [SendChannel].
+     * Use the [KotlinxCoroutinesSendChannel] as a [SendChannel].
      *
      * @return the [SendChannel]
      */
-    fun <E> kotlinx.coroutines.channels.SendChannel<E>.toSendChannel(): SendChannel<E> {
-      return object : SendChannel<E>, kotlinx.coroutines.channels.SendChannel<E> by this {}
+    fun <E> KotlinxCoroutinesSendChannel<E>.asSendChannel(): SendChannel<E> {
+      return object : KotlinxCoroutinesSendChannel<E> by this, SendChannel<E> {}
     }
   }
 }

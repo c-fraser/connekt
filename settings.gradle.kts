@@ -5,6 +5,7 @@ pluginManagement {
   val nexusPublishVersion: String by settings
   val versionsVersion: String by settings
   val dokkaVersion: String by settings
+  val knitVersion: String by settings
 
   plugins {
     kotlin("jvm") version kotlinVersion
@@ -20,8 +21,6 @@ pluginManagement {
     mavenCentral()
   }
 
-  val knitVersion: String by settings
-
   resolutionStrategy {
     eachPlugin {
       when (requested.id.id) {
@@ -33,4 +32,4 @@ pluginManagement {
 
 rootProject.name = "connekt"
 
-include("connekt-api", "connekt-rsocket")
+include("connekt-api", "connekt-rsocket", "examples")

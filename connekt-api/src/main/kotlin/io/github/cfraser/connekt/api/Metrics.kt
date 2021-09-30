@@ -13,21 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package io.github.cfraser.connekt.rsocket
+package io.github.cfraser.connekt.api
 
-import java.net.InetSocketAddress
+/** [Metrics] contains data collected for a [Transport]. */
+interface Metrics {
 
-/**
- * The [TopicDestinationResolver] type is responsible for determining the IP socket address(es) for
- * a *topic*.
- */
-interface TopicDestinationResolver {
+  /** The total number of messages received by the [Transport]. */
+  val messagesReceived: Long
 
-  /**
-   * Return the resolved the IP socket address(es).
-   *
-   * @param topic the *topic* to get the IP socket address(es) for
-   * @return the [InetSocketAddress] instances for the *topic*
-   */
-  suspend fun resolve(topic: String): Set<InetSocketAddress>
+  /** The total number of messages sent by the [Transport]. */
+  val messagesSent: Long
+
+  /** The total number of receive errors for the [Transport]. */
+  val receiveErrors: Long
+
+  /** The total number of send errors for the [Transport]. */
+  val sendErrors: Long
 }

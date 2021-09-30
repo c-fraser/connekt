@@ -16,33 +16,32 @@ limitations under the License.
 package io.github.cfraser.connekt.api
 
 import java.io.Closeable
-import kotlinx.coroutines.channels.SendChannel
 
 /**
- * [Transport] provides message sending and receiving capabilities using a messaging technology.
+ * [Transport] provides message sending and receiving capabilities using a message queuing
+ * technology.
  *
- * Each message is sent to a *topic*, subsequently the message is only received by receiving from
- * the same *topic*.
- *
- * > A *topic* is a case-sensitive [String] that cannot contain whitespace.
+ * Messages are asynchronously sent to a *queue* using the [SendChannel] returned by [sendTo], and
+ * messages are asynchronously received from a *queue* using the [ReceiveChannel] returned by
+ * [receiveFrom].
  */
 interface Transport : Closeable {
 
   /**
-   * Initialize a [ReceiveChannel] to [ReceiveChannel.receive] messages sent to the [topic].
+   * Initialize a [ReceiveChannel] to [ReceiveChannel.receive] messages from the [queue].
    *
-   * @param topic the *topic* to receive messages from
+   * @param queue the *queue* to receive messages from
    * @return the [ReceiveChannel]
    */
-  fun receive(topic: String): ReceiveChannel<ByteArray>
+  fun receiveFrom(queue: String): ReceiveChannel<ByteArray>
 
   /**
-   * Initialize a [SendChannel] to [SendChannel.send] messages to the topic.
+   * Initialize a [SendChannel] to [SendChannel.send] messages to the [queue].
    *
-   * @param topic the *topic* to send messages to
+   * @param queue the *queue* to send messages to
    * @return the [SendChannel]
    */
-  fun send(topic: String): SendChannel<ByteArray>
+  fun sendTo(queue: String): SendChannel<ByteArray>
 
   /**
    * Get the [Metrics] for the [Transport].
@@ -50,20 +49,4 @@ interface Transport : Closeable {
    * @return the [Metrics]
    */
   fun metrics(): Metrics
-
-  /** [Metrics] contains data collected for a [Transport]. */
-  interface Metrics {
-
-    /** The total number of messages received by the [Transport]. */
-    val messagesReceived: Long
-
-    /** The total number of messages sent by the [Transport]. */
-    val messagesSent: Long
-
-    /** The total number of receive errors for the [Transport]. */
-    val receiveErrors: Long
-
-    /** The total number of send errors for the [Transport]. */
-    val sendErrors: Long
-  }
 }

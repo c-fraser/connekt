@@ -18,15 +18,16 @@ package io.github.cfraser.connekt.api
 import java.util.concurrent.CompletableFuture
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.ReceiveChannel as KotlinxCoroutinesReceiveChannel
 import kotlinx.coroutines.future.future
 
 /**
- * [ReceiveChannel] is a [kotlinx.coroutines.channels.ReceiveChannel] plus [receiveAsync] which
- * enables idiomatic usage from *Java* code.
+ * [ReceiveChannel] is a [KotlinxCoroutinesReceiveChannel] plus [receiveAsync] which enables
+ * idiomatic non-blocking usage from *Java* code.
  *
- * @see kotlinx.coroutines.channels.ReceiveChannel
+ * @see KotlinxCoroutinesReceiveChannel
  */
-interface ReceiveChannel<out E> : kotlinx.coroutines.channels.ReceiveChannel<E> {
+interface ReceiveChannel<out E> : KotlinxCoroutinesReceiveChannel<E> {
 
   /**
    * Asynchronously [receive] the next *element* from this channel.
@@ -40,12 +41,12 @@ interface ReceiveChannel<out E> : kotlinx.coroutines.channels.ReceiveChannel<E> 
   companion object {
 
     /**
-     * Convert the [kotlinx.coroutines.channels.ReceiveChannel] to a [ReceiveChannel].
+     * Use the [KotlinxCoroutinesReceiveChannel] as a [ReceiveChannel].
      *
      * @return the [ReceiveChannel]
      */
-    fun <E> kotlinx.coroutines.channels.ReceiveChannel<E>.toReceiveChannel(): ReceiveChannel<E> {
-      return object : ReceiveChannel<E>, kotlinx.coroutines.channels.ReceiveChannel<E> by this {}
+    fun <E> KotlinxCoroutinesReceiveChannel<E>.asReceiveChannel(): ReceiveChannel<E> {
+      return object : KotlinxCoroutinesReceiveChannel<E> by this, ReceiveChannel<E> {}
     }
   }
 }
