@@ -78,19 +78,17 @@ class RSocketTransportTest {
   companion object {
 
     fun localRSocketTransport(): Transport {
-      val queueDestinationResolver =
-          object : QueueDestinationResolver {
-            override suspend fun resolve(queue: String) = setOf(InetSocketAddress(0))
-          }
+      val queueDestinationResolver = QueueDestinationResolver { setOf(InetSocketAddress(0)) }
       val (serverTransportInitializer, clientTransportInitializer) =
           RSocketTransportTest::class.simpleName!!.let { name ->
             ServerTransportInitializer { LocalServerTransport.create(name) } to
                 ClientTransportInitializer { LocalClientTransport.create(name) }
           }
-      return RSocketTransport.new(
-          queueDestinationResolver = queueDestinationResolver,
-          serverTransportInitializer = serverTransportInitializer,
-          clientTransportInitializer = clientTransportInitializer)
+      return RSocketTransport.Builder()
+          .queueDestinationResolver(queueDestinationResolver)
+          .serverTransportInitializer(serverTransportInitializer)
+          .clientTransportInitializer(clientTransportInitializer)
+          .build()
     }
   }
 }

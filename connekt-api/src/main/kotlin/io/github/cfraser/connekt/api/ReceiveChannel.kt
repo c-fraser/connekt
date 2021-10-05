@@ -45,6 +45,7 @@ interface ReceiveChannel<out E> : KotlinxCoroutinesReceiveChannel<E> {
      *
      * @return the [ReceiveChannel]
      */
+    @InternalConnektApi
     fun <E> KotlinxCoroutinesReceiveChannel<E>.asReceiveChannel(): ReceiveChannel<E> {
       return object : KotlinxCoroutinesReceiveChannel<E> by this, ReceiveChannel<E> {}
     }

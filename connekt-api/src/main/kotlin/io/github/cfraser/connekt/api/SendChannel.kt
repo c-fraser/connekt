@@ -45,6 +45,7 @@ interface SendChannel<in E> : KotlinxCoroutinesSendChannel<E> {
      *
      * @return the [SendChannel]
      */
+    @InternalConnektApi
     fun <E> KotlinxCoroutinesSendChannel<E>.asSendChannel(): SendChannel<E> {
       return object : KotlinxCoroutinesSendChannel<E> by this, SendChannel<E> {}
     }

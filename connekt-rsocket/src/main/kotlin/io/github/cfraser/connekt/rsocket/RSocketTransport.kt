@@ -55,6 +55,7 @@ import io.rsocket.util.ByteBufPayload
 import java.io.Closeable
 import java.time.Duration
 import java.util.UUID
+import kotlin.properties.Delegates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -93,13 +94,16 @@ import reactor.core.publisher.SignalType
  * [io.rsocket.transport.ServerTransport] used by the [RSocketServer]
  * @property clientTransportInitializer the [ClientTransportInitializer] to use to initialize the
  * [io.rsocket.transport.ClientTransport] used by the [RSocketClient] instances
+ * @property meterRegistry the [MeterRegistry] to use to track [RSocketServer] and [RSocketClient]
+ * metrics
  */
 class RSocketTransport
 private constructor(
     private val queueDestinationResolver: QueueDestinationResolver,
     private val token: String,
     private val serverTransportInitializer: ServerTransportInitializer,
-    private val clientTransportInitializer: ClientTransportInitializer
+    private val clientTransportInitializer: ClientTransportInitializer,
+    private val meterRegistry: MeterRegistry,
 ) : Transport {
 
   /**
@@ -113,7 +117,7 @@ private constructor(
    * [Payload] data.
    */
   private val sharedRSocketServer: SharedRSocketServer by lazy {
-    SharedRSocketServer(token, serverTransportInitializer, tag)
+    SharedRSocketServer(meterRegistry, token, serverTransportInitializer, tag)
   }
 
   /**
@@ -236,13 +240,16 @@ private constructor(
   override fun metrics(): Metrics {
     return object : Metrics {
       override val messagesReceived =
-          count("rsocket.frame", Tags.of(tag).and("frame.type", FrameType.REQUEST_FNF.name))
+          meterRegistry.count(
+              "rsocket.frame", Tags.of(tag).and("frame.type", FrameType.REQUEST_FNF.name))
       override val messagesSent =
-          count("rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_COMPLETE.name))
+          meterRegistry.count(
+              "rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_COMPLETE.name))
       override val receiveErrors =
-          count("rsocket.frame", Tags.of(tag).and("frame.type", FrameType.ERROR.name))
+          meterRegistry.count("rsocket.frame", Tags.of(tag).and("frame.type", FrameType.ERROR.name))
       override val sendErrors =
-          count("rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_ERROR.name))
+          meterRegistry.count(
+              "rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_ERROR.name))
     }
   }
 
@@ -265,6 +272,7 @@ private constructor(
    * routing metadata).
    */
   private class SharedRSocketServer(
+      meterRegistry: MeterRegistry,
       token: String,
       serverTransportInitializer: ServerTransportInitializer,
       tag: Tag
@@ -310,48 +318,63 @@ private constructor(
     }
   }
 
-  companion object {
+  /**
+   * Use the [RSocketTransport.Builder] class to [build] a [RSocketTransport] with the
+   * [builder pattern](https://en.wikipedia.org/wiki/Builder_pattern).
+   */
+  class Builder {
 
-    /**
-     * Factory function to initialize a [RSocketTransport].
-     *
-     * @param queueDestinationResolver the [QueueDestinationResolver] to use to determine the
-     * destination(s) of a *queue*
-     * @param token the authorized token required to establish a [RSocketClient] connection
-     * @param serverTransportInitializer the [ServerTransportInitializer] to use to initialize the
-     * [io.rsocket.transport.ServerTransport] used by the [RSocketServer]
-     * @param clientTransportInitializer the [ClientTransportInitializer] to use to initialize the
-     * [io.rsocket.transport.ClientTransport] used by the [RSocketClient] instances
-     * @return the [Transport]
-     */
-    @JvmOverloads
-    @JvmStatic
-    fun new(
-        queueDestinationResolver: QueueDestinationResolver,
-        token: String = RSocketTransport::class.qualifiedName!!,
-        serverTransportInitializer: ServerTransportInitializer = ServerTransportInitializer.DEFAULT,
-        clientTransportInitializer: ClientTransportInitializer = ClientTransportInitializer.DEFAULT
-    ): Transport {
-      return RSocketTransport(
-          queueDestinationResolver, token, serverTransportInitializer, clientTransportInitializer)
+    private var queueDestinationResolver: QueueDestinationResolver by Delegates.notNull()
+    private var token: String = RSocketTransport::class.qualifiedName!!
+    private var serverTransportInitializer: ServerTransportInitializer =
+        ServerTransportInitializer.DEFAULT
+    private var clientTransportInitializer: ClientTransportInitializer =
+        ClientTransportInitializer.DEFAULT
+    private var meterRegistry: MeterRegistry = SimpleMeterRegistry()
+
+    /** Use the [QueueDestinationResolver] to use to determine the destination(s) of a *queue*. */
+    fun queueDestinationResolver(queueDestinationResolver: QueueDestinationResolver) = apply {
+      this.queueDestinationResolver = queueDestinationResolver
     }
 
-    /** The [MeterRegistry] to use to track [RSocketServer] and [RSocketClient] metrics. */
-    private val meterRegistry by lazy { SimpleMeterRegistry() }
+    /** Use the authorized token required to establish a [RSocket] connection. */
+    fun token(token: String) = apply { this.token = token }
 
     /**
-     * Return the [Counter.count] for the metric corresponding to the [metricName] and [tags].
-     *
-     * @param metricName the name of the metric
-     * @param tags the [Tags] on the metric
+     * Use the [ServerTransportInitializer] to use to initialize the
+     * [io.rsocket.transport.ServerTransport] used by the [RSocketServer].
      */
-    private fun count(metricName: String, tags: Tags) =
-        runCatching { meterRegistry.get(metricName).tags(tags).counter() }
-            .onFailure { logger.warn(it) { "Unable to find counter with name $metricName" } }
-            .getOrNull()
-            ?.count()
-            ?.toLong()
-            ?: -1L
+    fun serverTransportInitializer(serverTransportInitializer: ServerTransportInitializer) = apply {
+      this.serverTransportInitializer = serverTransportInitializer
+    }
+
+    /**
+     * Use the [ClientTransportInitializer] to use to initialize the
+     * [io.rsocket.transport.ClientTransport] used by the [RSocketClient] instances.
+     */
+    fun clientTransportInitializer(clientTransportInitializer: ClientTransportInitializer) = apply {
+      this.clientTransportInitializer = clientTransportInitializer
+    }
+
+    /** Use the [MeterRegistry] to use to track [RSocketServer] and [RSocketClient] metrics. */
+    fun meterRegistry(meterRegistry: MeterRegistry) = apply { this.meterRegistry = meterRegistry }
+
+    /**
+     * Build the [RSocketTransport].
+     *
+     * @return the [Transport]
+     */
+    fun build(): Transport {
+      return RSocketTransport(
+          queueDestinationResolver,
+          token,
+          serverTransportInitializer,
+          clientTransportInitializer,
+          meterRegistry)
+    }
+  }
+
+  companion object {
 
     /**
      * Create a [Payload], for the setup connection, that contains the [token] in the auth metadata.
@@ -429,6 +452,20 @@ private constructor(
         withContext(Dispatchers.Default) {
           with(RoutingMetadata(Unpooled.wrappedBuffer(metadata))) { joinToString("") }
         }
+
+    /**
+     * Return the [Counter.count] for the metric corresponding to the [metricName] and [tags].
+     *
+     * @param metricName the name of the metric
+     * @param tags the [Tags] on the metric
+     */
+    private fun MeterRegistry.count(metricName: String, tags: Tags) =
+        runCatching { get(metricName).tags(tags).counter() }
+            .onFailure { logger.warn(it) { "Unable to find counter with name $metricName" } }
+            .getOrNull()
+            ?.count()
+            ?.toLong()
+            ?: -1L
 
     private val logger by lazy { KotlinLogging.logger {} }
   }

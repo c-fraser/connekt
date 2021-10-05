@@ -1,6 +1,7 @@
+import io.github.cfraser.connekt.configurePublishing
+
 plugins {
   `java-library`
-  id("org.jetbrains.dokka")
   `maven-publish`
   signing
 }
@@ -11,3 +12,5 @@ dependencies {
   api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$kotlinxCoroutinesVersion")
 }
+
+configurePublishing()
