@@ -27,7 +27,7 @@ allprojects {
   repositories { mavenCentral() }
 }
 
-subprojects {
+subprojects project@{
   apply(plugin = "org.jetbrains.kotlin.jvm")
   apply(plugin = "org.jetbrains.dokka")
   apply(plugin = "io.gitlab.arturbosch.detekt")
@@ -70,7 +70,11 @@ subprojects {
           includes.from(projectDir.resolve("MODULE.md"))
           platform.set(Platform.jvm)
           jdkVersion.set(JavaVersion.VERSION_11.ordinal)
-          sourceLink { remoteUrl.set(URL("$projectUrl/tree/main/${project.name}/src/main/kotlin")) }
+          sourceLink {
+            localDirectory.set(file("src/main/kotlin"))
+            remoteUrl.set(URL("$projectUrl/tree/main/${this@project.name}/src/main/kotlin"))
+            remoteLineSuffix.set("#L")
+          }
         }
       }
     }
