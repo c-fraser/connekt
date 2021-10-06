@@ -234,29 +234,15 @@ jreleaser {
         formatted.set(Active.ALWAYS)
         format.set("- {{commitShortHash}} {{commitTitle}}")
         contributors.enabled.set(false)
-        labeler {
-          label.set("added")
-          title.set("added")
-        }
-        category {
-          title.set("Added")
-          labels.set(listOf("added"))
-        }
-        labeler {
-          label.set("changed")
-          title.set("changed")
-        }
-        category {
-          title.set("Changed")
-          labels.set(listOf("changed"))
-        }
-        labeler {
-          label.set("removed")
-          title.set("removed")
-        }
-        category {
-          title.set("Removed")
-          labels.set(listOf("removed"))
+        for (status in listOf("added", "changed", "fixed", "removed")) {
+          labeler {
+            label.set(status)
+            title.set(status)
+          }
+          category {
+            title.set(status.capitalize())
+            labels.set(listOf(status))
+          }
         }
       }
     }
