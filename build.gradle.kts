@@ -34,8 +34,6 @@ subprojects project@{
   configure<JavaPluginExtension> {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
-
-    withSourcesJar()
   }
 
   dependencies {
@@ -106,10 +104,19 @@ subprojects project@{
             from(dokkaJavadoc.outputDirectory.get())
           }
 
+      val sourcesJar by
+          tasks.creating(Jar::class) {
+            val sourceSets: SourceSetContainer by this@project
+            dependsOn(tasks["classes"])
+            archiveClassifier.set("sources")
+            from(sourceSets["main"].allSource)
+          }
+
       publications {
         create<MavenPublication>("maven") {
           from(this@project.components["java"])
           artifact(dokkaJavadocJar)
+          artifact(sourcesJar)
           pom {
             name.set(this@project.name)
             description.set("${this@project.name}-${this@project.version}")
