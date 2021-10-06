@@ -1,5 +1,3 @@
-import io.github.cfraser.connekt.configurePublishing
-
 plugins {
   `java-library`
   `maven-publish`
@@ -9,8 +7,6 @@ plugins {
 dependencies {
   val kotlinxCoroutinesVersion: String by rootProject
 
-  api("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutinesVersion")
+  api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinxCoroutinesVersion")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$kotlinxCoroutinesVersion")
 }
-
-configurePublishing()

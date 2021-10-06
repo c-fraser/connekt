@@ -1,10 +1,9 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
-import io.github.cfraser.connekt.projectUrl
 import io.gitlab.arturbosch.detekt.Detekt
 import java.net.URL
 import kotlinx.knit.KnitPluginExtension
-import org.gradle.jvm.tasks.Jar
 import org.jetbrains.dokka.Platform
+import org.jetbrains.dokka.gradle.AbstractDokkaTask
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jreleaser.model.Active
@@ -36,9 +35,17 @@ subprojects project@{
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
 
-    modularity.inferModulePath.set(true)
-
     withSourcesJar()
+  }
+
+  dependencies {
+    val junitVersion: String by rootProject
+
+    "implementation"(kotlin("stdlib"))
+    "testImplementation"(kotlin("test"))
+    "testImplementation"(kotlin("test-junit5"))
+    "testImplementation"("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+    "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
   }
 
   tasks {
@@ -58,7 +65,7 @@ subprojects project@{
 
     withType<Test> { useJUnitPlatform { excludeTags("integration") } }
 
-    create("integrationTest", Test::class) {
+    register<Test>("integrationTest") {
       description = "Runs tests annotated with 'integration' tag"
 
       useJUnitPlatform { includeTags("integration") }
@@ -66,41 +73,87 @@ subprojects project@{
 
     withType<DokkaTask>().configureEach {
       dokkaSourceSets {
-        configureEach {
+        named("main") {
+          moduleName.set(this@project.name)
           includes.from(projectDir.resolve("MODULE.md"))
           platform.set(Platform.jvm)
           jdkVersion.set(JavaVersion.VERSION_11.ordinal)
           sourceLink {
             localDirectory.set(file("src/main/kotlin"))
-            remoteUrl.set(URL("$projectUrl/tree/main/${this@project.name}/src/main/kotlin"))
+            remoteUrl.set(
+                URL(
+                    "https://github.com/c-fraser/connekt/tree/main/${this@project.name}/src/main/kotlin"))
             remoteLineSuffix.set("#L")
           }
         }
       }
     }
 
-    register("dokkaJavadocJar", Jar::class) {
-      val dokkaJavadoc = named<DokkaTask>("dokkaJavadoc")
-      dependsOn(dokkaJavadoc)
-      archiveClassifier.set("javadoc")
-      from(dokkaJavadoc.get().outputDirectory.get())
+    withType<Detekt> {
+      jvmTarget = "${JavaVersion.VERSION_11}"
+      buildUponDefaultConfig = true
+      config.setFrom(rootDir.resolve("detekt.yml"))
     }
   }
 
-  dependencies {
-    val junitVersion: String by rootProject
+  plugins.withType<MavenPublishPlugin> {
+    configure<PublishingExtension> {
+      val dokkaJavadocJar by
+          tasks.creating(Jar::class) {
+            val dokkaJavadoc by tasks.getting(AbstractDokkaTask::class)
+            dependsOn(dokkaJavadoc)
+            archiveClassifier.set("javadoc")
+            from(dokkaJavadoc.outputDirectory.get())
+          }
 
-    "implementation"(kotlin("stdlib"))
-    "testImplementation"(kotlin("test"))
-    "testImplementation"(kotlin("test-junit5"))
-    "testImplementation"("org.junit.jupiter:junit-jupiter-api:$junitVersion")
-    "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
-  }
+      publications {
+        create<MavenPublication>("maven") {
+          from(this@project.components["java"])
+          artifact(dokkaJavadocJar)
+          pom {
+            name.set(this@project.name)
+            description.set("${this@project.name}-${this@project.version}")
+            url.set("https://github.com/c-fraser/connekt")
+            inceptionYear.set("2021")
 
-  tasks.withType<Detekt> {
-    jvmTarget = "${JavaVersion.VERSION_11}"
-    buildUponDefaultConfig = true
-    config.setFrom(rootDir.resolve("detekt.yml"))
+            issueManagement {
+              system.set("GitHub")
+              url.set("https://github.com/c-fraser/connekt/issues")
+            }
+
+            licenses {
+              license {
+                name.set("The Apache Software License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("repo")
+              }
+            }
+
+            developers {
+              developer {
+                id.set("c-fraser")
+                name.set("Chris Fraser")
+              }
+            }
+
+            scm {
+              url.set("https://github.com/c-fraser/connekt")
+              connection.set("scm:git:git://github.com/c-fraser/connekt.git")
+              developerConnection.set("scm:git:ssh://git@github.com/c-fraser/connekt.git")
+            }
+          }
+        }
+      }
+
+      plugins.withType<SigningPlugin>() {
+        configure<SigningExtension> {
+          publications.withType<MavenPublication>().all mavenPublication@{
+            useInMemoryPgpKeys(System.getenv("GPG_SIGNING_KEY"), System.getenv("GPG_PASSWORD"))
+            sign(this@mavenPublication)
+          }
+        }
+      }
+    }
   }
 }
 
@@ -159,7 +212,7 @@ nexusPublishing {
 
 jreleaser {
   project {
-    website.set(projectUrl)
+    website.set("https://github.com/c-fraser/connekt")
     authors.set(listOf("c-fraser"))
     license.set("Apache-2.0")
     extraProperties.put("inceptionYear", "2021")
@@ -204,7 +257,7 @@ jreleaser {
 }
 
 configure<KnitPluginExtension> {
-  siteRoot = projectUrl
+  siteRoot = "https://github.com/c-fraser/connekt"
   files = fileTree(rootProject.rootDir) { include("README.md") }
   rootDir = rootProject.rootDir
 }

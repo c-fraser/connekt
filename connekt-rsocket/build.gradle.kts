@@ -1,5 +1,3 @@
-import io.github.cfraser.connekt.configurePublishing
-
 plugins {
   `java-library`
   `maven-publish`
@@ -30,7 +28,5 @@ dependencies {
   testImplementation("io.rsocket:rsocket-transport-local:$rsocketVersion")
   testImplementation("org.slf4j:slf4j-simple:$slf4jVersion")
 }
-
-configurePublishing()
 
 tasks.test { systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug") }
