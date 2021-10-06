@@ -1,6 +1,7 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import java.net.URL
+import java.util.jar.Attributes
 import kotlinx.knit.KnitPluginExtension
 import org.jetbrains.dokka.Platform
 import org.jetbrains.dokka.gradle.AbstractDokkaTask
@@ -21,7 +22,7 @@ plugins {
 
 allprojects {
   group = "io.github.c-fraser"
-  version = "0.1.0"
+  version = "0.1.1"
 
   repositories { mavenCentral() }
 }
@@ -58,6 +59,16 @@ subprojects project@{
                 "-Xopt-in=io.github.cfraser.connekt.api.InternalConnektApi",
                 "-Xopt-in=kotlinx.coroutines.DelicateCoroutinesApi",
                 "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi")
+      }
+    }
+
+    withType<Jar> {
+      manifest {
+        attributes(
+            "${Attributes.Name.IMPLEMENTATION_TITLE}" to this@project.name,
+            "${Attributes.Name.IMPLEMENTATION_VERSION}" to this@project.version,
+            "Automatic-Module-Name" to
+                "io.github.cfraser.connekt.${this@project.name.removePrefix("${rootProject.name}-")}")
       }
     }
 
@@ -165,6 +176,8 @@ subprojects project@{
 }
 
 configure<SpotlessExtension> {
+  val ktfmtVersion: String by rootProject
+
   val licenseHeader =
       """
       /*
@@ -183,8 +196,6 @@ configure<SpotlessExtension> {
       limitations under the License.
       */
       """.trimIndent()
-
-  val ktfmtVersion: String by rootProject
 
   kotlin {
     ktfmt(ktfmtVersion)
