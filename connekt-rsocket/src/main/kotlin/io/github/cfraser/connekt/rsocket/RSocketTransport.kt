@@ -17,16 +17,13 @@ package io.github.cfraser.connekt.rsocket
 
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Caffeine
-import com.github.benmanes.caffeine.cache.LoadingCache
 import com.github.michaelbull.retry.policy.binaryExponentialBackoff
 import com.github.michaelbull.retry.policy.limitAttempts
 import com.github.michaelbull.retry.policy.plus
 import com.github.michaelbull.retry.retry
+import io.github.cfraser.connekt.api.ExperimentalTransport
 import io.github.cfraser.connekt.api.Metrics
 import io.github.cfraser.connekt.api.ReceiveChannel
-import io.github.cfraser.connekt.api.ReceiveChannel.Companion.asReceiveChannel
-import io.github.cfraser.connekt.api.SendChannel
-import io.github.cfraser.connekt.api.SendChannel.Companion.asSendChannel
 import io.github.cfraser.connekt.api.Transport
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
@@ -56,24 +53,21 @@ import java.io.Closeable
 import java.time.Duration
 import java.util.UUID
 import kotlin.properties.Delegates
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.future.future
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asPublisher
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
@@ -87,6 +81,16 @@ import reactor.core.publisher.SignalType
  * [RSocketTransport] is a [Transport] implementation that uses [RSocketClient] and [RSocketServer]
  * to, respectively, send and receive messages.
  *
+ * [RSocketTransport] is an [ExperimentalTransport] because [RSocket](https://rsocket.io/) is a
+ * fundamentally different *messaging technology* relative to the other supported *connekt*
+ * transports. *RSocket* is simply an application protocol enabling
+ * [Reactive Streams](https://www.reactive-streams.org/) semantics for peer-to-peer communication.
+ * Typically, a [Transport] will leverage a *messaging system* with a
+ * [message broker](https://en.wikipedia.org/wiki/Message_broker), which often significantly
+ * simplifies the design and implementation.
+ *
+ * > [RSocketTransport] is *thread-safe* thus access from multiple concurrent threads is allowed.
+ *
  * @property queueDestinationResolver the [QueueDestinationResolver] to use to determine the
  * destination(s) of a *queue*
  * @property token the authorized token required to establish a [RSocketClient] connection
@@ -97,6 +101,7 @@ import reactor.core.publisher.SignalType
  * @property meterRegistry the [MeterRegistry] to use to track [RSocketServer] and [RSocketClient]
  * metrics
  */
+@ExperimentalTransport
 class RSocketTransport
 private constructor(
     private val queueDestinationResolver: QueueDestinationResolver,
@@ -104,7 +109,7 @@ private constructor(
     private val serverTransportInitializer: ServerTransportInitializer,
     private val clientTransportInitializer: ClientTransportInitializer,
     private val meterRegistry: MeterRegistry,
-) : Transport {
+) : Transport.Base() {
 
   /**
    * The [Tag] for this [RSocketTransport] which allows for the relevant metrics to be retrieved
@@ -118,36 +123,6 @@ private constructor(
    */
   private val sharedRSocketServer: SharedRSocketServer by lazy {
     SharedRSocketServer(meterRegistry, token, serverTransportInitializer, tag)
-  }
-
-  /**
-   * The [LoadingCache] which initializes and stores the [ReceiveChannel] for each *queue*.
-   *
-   * Each [ReceiveChannel] *subscribes* to the [sharedRSocketServer] and emits payload data that was
-   * routed to the corresponding *queue*.
-   */
-  private val receiveChannels: LoadingCache<String, ReceiveChannel<ByteArray>> by lazy {
-    Caffeine.newBuilder().build { queue ->
-      GlobalScope.produce<ByteArray>(Dispatchers.IO) {
-            sharedRSocketServer
-                .payloads
-                // Defensively copy the payload since it could be emitted to multiple receivers
-                .map { payload -> payload.copy() }
-                // Only emit payloads that were routed to the queue
-                .filter { payload ->
-                  payload
-                      .runCatching { decodeRoutingMetadata() == queue }
-                      .onFailure { logger.error(it) { "Failed to decode routing metadata" } }
-                      .getOrDefault(false)
-                }
-                .map { payload -> withContext(Dispatchers.Default) { payload.sliceData().array() } }
-                .onEach { byteArray ->
-                  logger.debug { "Received ${byteArray.size} bytes from queue $queue" }
-                }
-                .collect { byteArray -> channel.send(byteArray) }
-          }
-          .asReceiveChannel()
-    }
   }
 
   /**
@@ -200,63 +175,140 @@ private constructor(
   }
 
   /**
-   * The [LoadingCache] which initializes and stores the [SendChannel] for each *queue*.
+   * *Receive* messages from the [sharedRSocketServer] and emit [Payload] data that was routed to
+   * the [queue].
    *
-   * The bytes sent to each [SendChannel] are delivered to the appropriate destination via the
-   * [RSocketClient] instances in the [rSocketClientCache] for the *queue*.
+   * @param queue the *queue* to receive messages from
+   * @return the [Flow] of [ByteArray]
    */
-  private val sendChannels: LoadingCache<String, SendChannel<ByteArray>> by lazy {
-    Caffeine.newBuilder().build { queue ->
-      Channel<ByteArray>()
-          .also { channel ->
-            GlobalScope.launch(Dispatchers.IO) {
-              for (byteArray in channel) {
-                val payload = mono { createPayload(byteArray, queue) }
-                rSocketClientCache[queue]?.run {
-                  await()
-                      .runCatching {
-                        retry(limitAttempts(10) + binaryExponentialBackoff(500L..60_000L)) {
-                          fireAndForget(payload).awaitSingleOrNull()
-                        }
-                      }
-                      .onSuccess { logger.debug { "Sent ${byteArray.size} bytes to queue $queue" } }
-                      .onFailure { logger.error(it) { "Failed to send payload to destination" } }
-                }
-              }
+  override fun CoroutineScope.receive(queue: String): Flow<ByteArray> {
+    return sharedRSocketServer
+        .payloads
+        // Defensively copy the payload since it could be emitted to multiple receivers
+        .map { payload -> payload.copy() }
+        // Only emit payloads that were routed to the queue
+        .filter { payload ->
+          payload
+              .runCatching { decodeRoutingMetadata() == queue }
+              .onFailure { logger.error(it) { "Failed to decode routing metadata" } }
+              .getOrDefault(false)
+        }
+        .map { payload -> withContext(Dispatchers.Default) { payload.sliceData().array() } }
+  }
+
+  /**
+   * *Send* the [byteArray] to the appropriate destination via the [RSocketClient] instances in the
+   * [rSocketClientCache] for the [queue].
+   *
+   * @param queue the *queue* to send the message to
+   * @param byteArray the [ByteArray] to send
+   */
+  override suspend fun send(queue: String, byteArray: ByteArray) {
+    val payload = mono { createPayload(byteArray, queue) }
+    rSocketClientCache[queue]?.run {
+      await()
+          .runCatching {
+            retry(limitAttempts(10) + binaryExponentialBackoff(500L..60_000L)) {
+              fireAndForget(payload).awaitSingleOrNull()
             }
           }
-          .asSendChannel()
+          .onSuccess { logger.debug { "Sent ${byteArray.size} bytes to queue $queue" } }
+          .onFailure { logger.error(it) { "Failed to send payload to destination" } }
     }
   }
 
-  override fun receiveFrom(queue: String): ReceiveChannel<ByteArray> {
-    return receiveChannels[queue] ?: error("Failed to initialize receive channel for queue $queue")
-  }
-
-  override fun sendTo(queue: String): SendChannel<ByteArray> {
-    return sendChannels[queue] ?: error("Failed to initialize send channel for queue $queue")
-  }
-
-  override fun metrics(): Metrics {
-    return object : Metrics {
-      override val messagesReceived =
+  override fun metrics() =
+      Metrics(
           meterRegistry.count(
-              "rsocket.frame", Tags.of(tag).and("frame.type", FrameType.REQUEST_FNF.name))
-      override val messagesSent =
+              "rsocket.frame", Tags.of(tag).and("frame.type", FrameType.REQUEST_FNF.name)),
           meterRegistry.count(
-              "rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_COMPLETE.name))
-      override val receiveErrors =
-          meterRegistry.count("rsocket.frame", Tags.of(tag).and("frame.type", FrameType.ERROR.name))
-      override val sendErrors =
+              "rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_COMPLETE.name)),
           meterRegistry.count(
-              "rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_ERROR.name))
-    }
-  }
+              "rsocket.frame", Tags.of(tag).and("frame.type", FrameType.ERROR.name)),
+          meterRegistry.count(
+              "rsocket.request.fnf", Tags.of(tag).and("signal.type", SignalType.ON_ERROR.name)))
 
   /** Close the [sharedRSocketServer] and [RSocketClient] instances in [rSocketClientCache]. */
   override fun close() {
     sharedRSocketServer.close()
     rSocketClientCache.synchronous().invalidateAll()
+  }
+
+  /**
+   * Use the [RSocketTransport.Builder] class to [build] a [RSocketTransport] with the
+   * [builder pattern](https://en.wikipedia.org/wiki/Builder_pattern).
+   */
+  class Builder : Transport.Builder {
+
+    private var queueDestinationResolver: QueueDestinationResolver by Delegates.notNull()
+    private var token: String = RSocketTransport::class.qualifiedName!!
+    private var serverTransportInitializer: ServerTransportInitializer =
+        ServerTransportInitializer.DEFAULT
+    private var clientTransportInitializer: ClientTransportInitializer =
+        ClientTransportInitializer.DEFAULT
+    private var meterRegistry: MeterRegistry = SimpleMeterRegistry()
+
+    /**
+     * Use the [queueDestinationResolver] to use to determine the destination(s) of a *queue*.
+     *
+     * @param queueDestinationResolver the [QueueDestinationResolver]
+     * @return the [RSocketTransport.Builder]
+     */
+    fun queueDestinationResolver(queueDestinationResolver: QueueDestinationResolver) = apply {
+      this.queueDestinationResolver = queueDestinationResolver
+    }
+
+    /**
+     * Use the authorized [token] to establish a [RSocket] connection.
+     *
+     * @param token the required authorization token
+     * @return the [RSocketTransport.Builder]
+     */
+    fun token(token: String) = apply { this.token = token }
+
+    /**
+     * Use the [serverTransportInitializer] to use to initialize the
+     * [io.rsocket.transport.ServerTransport] used by the [RSocketServer].
+     *
+     * @param serverTransportInitializer the [ServerTransportInitializer]
+     * @return the [RSocketTransport.Builder]
+     */
+    fun serverTransportInitializer(serverTransportInitializer: ServerTransportInitializer) = apply {
+      this.serverTransportInitializer = serverTransportInitializer
+    }
+
+    /**
+     * Use the [clientTransportInitializer] to use to initialize the
+     * [io.rsocket.transport.ClientTransport] used by the [RSocketClient] instances.
+     *
+     * @param clientTransportInitializer the [ClientTransportInitializer]
+     * @return the [RSocketTransport.Builder]
+     */
+    fun clientTransportInitializer(clientTransportInitializer: ClientTransportInitializer) = apply {
+      this.clientTransportInitializer = clientTransportInitializer
+    }
+
+    /**
+     * Use the [meterRegistry] to use to track [RSocketServer] and [RSocketClient] metrics.
+     *
+     * @param meterRegistry the [MeterRegistry]
+     * @return the [RSocketTransport.Builder]
+     */
+    fun meterRegistry(meterRegistry: MeterRegistry) = apply { this.meterRegistry = meterRegistry }
+
+    /**
+     * Build the [RSocketTransport].
+     *
+     * @return the [Transport]
+     */
+    override fun build(): Transport {
+      return RSocketTransport(
+          queueDestinationResolver,
+          token,
+          serverTransportInitializer,
+          clientTransportInitializer,
+          meterRegistry)
+    }
   }
 
   /**
@@ -318,63 +370,7 @@ private constructor(
     }
   }
 
-  /**
-   * Use the [RSocketTransport.Builder] class to [build] a [RSocketTransport] with the
-   * [builder pattern](https://en.wikipedia.org/wiki/Builder_pattern).
-   */
-  class Builder {
-
-    private var queueDestinationResolver: QueueDestinationResolver by Delegates.notNull()
-    private var token: String = RSocketTransport::class.qualifiedName!!
-    private var serverTransportInitializer: ServerTransportInitializer =
-        ServerTransportInitializer.DEFAULT
-    private var clientTransportInitializer: ClientTransportInitializer =
-        ClientTransportInitializer.DEFAULT
-    private var meterRegistry: MeterRegistry = SimpleMeterRegistry()
-
-    /** Use the [QueueDestinationResolver] to use to determine the destination(s) of a *queue*. */
-    fun queueDestinationResolver(queueDestinationResolver: QueueDestinationResolver) = apply {
-      this.queueDestinationResolver = queueDestinationResolver
-    }
-
-    /** Use the authorized token required to establish a [RSocket] connection. */
-    fun token(token: String) = apply { this.token = token }
-
-    /**
-     * Use the [ServerTransportInitializer] to use to initialize the
-     * [io.rsocket.transport.ServerTransport] used by the [RSocketServer].
-     */
-    fun serverTransportInitializer(serverTransportInitializer: ServerTransportInitializer) = apply {
-      this.serverTransportInitializer = serverTransportInitializer
-    }
-
-    /**
-     * Use the [ClientTransportInitializer] to use to initialize the
-     * [io.rsocket.transport.ClientTransport] used by the [RSocketClient] instances.
-     */
-    fun clientTransportInitializer(clientTransportInitializer: ClientTransportInitializer) = apply {
-      this.clientTransportInitializer = clientTransportInitializer
-    }
-
-    /** Use the [MeterRegistry] to use to track [RSocketServer] and [RSocketClient] metrics. */
-    fun meterRegistry(meterRegistry: MeterRegistry) = apply { this.meterRegistry = meterRegistry }
-
-    /**
-     * Build the [RSocketTransport].
-     *
-     * @return the [Transport]
-     */
-    fun build(): Transport {
-      return RSocketTransport(
-          queueDestinationResolver,
-          token,
-          serverTransportInitializer,
-          clientTransportInitializer,
-          meterRegistry)
-    }
-  }
-
-  companion object {
+  private companion object {
 
     /**
      * Create a [Payload], for the setup connection, that contains the [token] in the auth metadata.
@@ -382,7 +378,7 @@ private constructor(
      * @param token the authorized bearer token
      * @return the [Payload]
      */
-    private suspend fun createSetupPayload(token: String): Payload =
+    suspend fun createSetupPayload(token: String): Payload =
         withContext(Dispatchers.Default) {
           val authMetadata =
               AuthMetadataCodec.encodeBearerMetadata(ByteBufAllocator.DEFAULT, token.toCharArray())
@@ -396,7 +392,7 @@ private constructor(
      * @param name the destination *queue* to include in routing metadata
      * @return the [Payload]
      */
-    private suspend fun createPayload(byteArray: ByteArray, name: String): Payload =
+    suspend fun createPayload(byteArray: ByteArray, name: String): Payload =
         withContext(Dispatchers.Default) {
           ByteBufPayload.create(
               Unpooled.wrappedBuffer(byteArray), createRoutingMetadata(name).content)
@@ -411,7 +407,7 @@ private constructor(
      * @param token the authorized bearer token
      * @throws [IllegalStateException] if the [ConnectionSetupPayload] is invalid
      */
-    private suspend fun ConnectionSetupPayload.check(token: String) {
+    suspend fun ConnectionSetupPayload.check(token: String) {
       withContext(Dispatchers.Default) {
         val byteBuf = Unpooled.wrappedBuffer(metadata)
         check(AuthMetadataCodec.isWellKnownAuthType(byteBuf)) { "unrecognized metadata" }
@@ -429,7 +425,7 @@ private constructor(
      *
      * @return the copied payload
      */
-    private suspend fun Payload.copy(): Payload =
+    suspend fun Payload.copy(): Payload =
         withContext(Dispatchers.Default) { ByteBufPayload.create(this@copy) }
 
     /**
@@ -438,7 +434,7 @@ private constructor(
      * @param queue the destination *queue*
      * @return the [RoutingMetadata]
      */
-    private suspend fun createRoutingMetadata(queue: String): RoutingMetadata =
+    suspend fun createRoutingMetadata(queue: String): RoutingMetadata =
         withContext(Dispatchers.Default) {
           TaggingMetadataCodec.createRoutingMetadata(ByteBufAllocator.DEFAULT, queue.chunked(255))
         }
@@ -448,7 +444,7 @@ private constructor(
      *
      * @return the destination *queue*
      */
-    private suspend fun Payload.decodeRoutingMetadata(): String =
+    suspend fun Payload.decodeRoutingMetadata(): String =
         withContext(Dispatchers.Default) {
           with(RoutingMetadata(Unpooled.wrappedBuffer(metadata))) { joinToString("") }
         }
@@ -459,7 +455,7 @@ private constructor(
      * @param metricName the name of the metric
      * @param tags the [Tags] on the metric
      */
-    private fun MeterRegistry.count(metricName: String, tags: Tags) =
+    fun MeterRegistry.count(metricName: String, tags: Tags) =
         runCatching { get(metricName).tags(tags).counter() }
             .onFailure { logger.warn(it) { "Unable to find counter with name $metricName" } }
             .getOrNull()
@@ -467,6 +463,6 @@ private constructor(
             ?.toLong()
             ?: -1L
 
-    private val logger by lazy { KotlinLogging.logger {} }
+    val logger by lazy { KotlinLogging.logger {} }
   }
 }

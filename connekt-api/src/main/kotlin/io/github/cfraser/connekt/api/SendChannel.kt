@@ -20,14 +20,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.SendChannel as KotlinxCoroutinesSendChannel
 import kotlinx.coroutines.future.future
+import kotlinx.coroutines.runBlocking
 
 /**
- * [SendChannel] is a [KotlinxCoroutinesSendChannel] plus [sendAsync] which enables idiomatic
- * non-blocking usage from *Java* code.
+ * [SendChannel] is a [KotlinxCoroutinesSendChannel] plus [sendSync] and [sendAsync] which enables
+ * idiomatic usage from *Java* code.
  *
  * @see KotlinxCoroutinesSendChannel
  */
 interface SendChannel<in E> : KotlinxCoroutinesSendChannel<E> {
+
+  /** Synchronously [send] the [element] to this channel. */
+  fun sendSync(element: E) {
+    runBlocking(Dispatchers.IO) { send(element) }
+  }
 
   /**
    * Asynchronously [send] the [element] to this channel.

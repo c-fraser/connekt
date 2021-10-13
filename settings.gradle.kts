@@ -6,7 +6,7 @@ pluginManagement {
   val jreleaserVersion: String by settings
   val versionsVersion: String by settings
   val dokkaVersion: String by settings
-  val knitVersion: String by settings
+  val dockerApiVersion: String by settings
 
   plugins {
     kotlin("jvm") version kotlinVersion
@@ -16,6 +16,7 @@ pluginManagement {
     id("org.jreleaser") version jreleaserVersion
     id("com.github.ben-manes.versions") version versionsVersion
     id("org.jetbrains.dokka") version dokkaVersion
+    id("com.bmuschko.docker-remote-api") version dockerApiVersion
   }
 
   repositories {
@@ -23,9 +24,14 @@ pluginManagement {
     mavenCentral()
   }
 
+  val atomicfuVersion: String by settings
+  val knitVersion: String by settings
+
   resolutionStrategy {
     eachPlugin {
       when (requested.id.id) {
+        "kotlinx-atomicfu" ->
+            useModule("org.jetbrains.kotlinx:atomicfu-gradle-plugin:$atomicfuVersion")
         "kotlinx-knit" -> useModule("org.jetbrains.kotlinx:kotlinx-knit:$knitVersion")
       }
     }
@@ -34,4 +40,4 @@ pluginManagement {
 
 rootProject.name = "connekt"
 
-include("connekt-api", "connekt-rsocket", "examples")
+include("connekt-api", "connekt-redis", "connekt-rsocket", "connekt-test", "examples")

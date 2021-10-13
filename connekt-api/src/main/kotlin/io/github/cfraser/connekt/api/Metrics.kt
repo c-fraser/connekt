@@ -15,18 +15,20 @@ limitations under the License.
 */
 package io.github.cfraser.connekt.api
 
-/** [Metrics] contains data collected for a [Transport]. */
-interface Metrics {
+/**
+ * [Metrics] contains data collected for a [Transport].
+ *
+ * @property messagesReceived the total number of messages received by the [Transport]
+ * @property messagesSent the total number of messages sent by the [Transport]
+ * @property receiveErrors the total number of receive errors for the [Transport]
+ * @property sendErrors the total number of send errors for the [Transport]
+ */
+data class Metrics(
+    val messagesReceived: Long,
+    val messagesSent: Long,
+    val receiveErrors: Long,
+    val sendErrors: Long
+) {
 
-  /** The total number of messages received by the [Transport]. */
-  val messagesReceived: Long
-
-  /** The total number of messages sent by the [Transport]. */
-  val messagesSent: Long
-
-  /** The total number of receive errors for the [Transport]. */
-  val receiveErrors: Long
-
-  /** The total number of send errors for the [Transport]. */
-  val sendErrors: Long
+  constructor() : this(0, 0, 0, 0)
 }

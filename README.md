@@ -29,10 +29,12 @@ via [Maven Central](https://search.maven.org/search?q=g:io.github.c-fraser%20AND
 Build a `RSocketTransport` then send and receive a message.
 
 <!--- PREFIX
+@file:OptIn(ExperimentalTransport::class)
 @file:Suppress("PackageDirectoryMismatch")
 -->
 
 <!--- INCLUDE
+import io.github.cfraser.connekt.api.ExperimentalTransport
 import io.github.cfraser.connekt.rsocket.RSocketTransport
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -65,15 +67,6 @@ Hello, world!
 > Refer
 > to [this example](https://github.com/c-fraser/connekt/tree/main/examples/src/main/java/io/github/cfraser/connekt/example/RSocketTransportExample.java)
 > to see how to use `RSocketTransport` in **Java**.
-
-## TODO
-
-* ~~Define API~~
-* ~~RSocket transport~~
-* Redis transport
-* AWS SQS transport
-* NATS transport
-* Kafka transport
 
 ## License
 

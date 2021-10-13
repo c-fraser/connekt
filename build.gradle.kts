@@ -32,9 +32,11 @@ subprojects project@{
   apply(plugin = "org.jetbrains.dokka")
   apply(plugin = "io.gitlab.arturbosch.detekt")
 
-  configure<JavaPluginExtension> {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+  plugins.withType<JavaLibraryPlugin>() {
+    configure<JavaPluginExtension> {
+      sourceCompatibility = JavaVersion.VERSION_11
+      targetCompatibility = JavaVersion.VERSION_11
+    }
   }
 
   dependencies {
@@ -84,11 +86,13 @@ subprojects project@{
       dokkaSourceSets {
         named("main") {
           moduleName.set(this@project.name)
-          includes.from(projectDir.resolve("MODULE.md"))
+          runCatching { this@project.file("MODULE.md") }.onSuccess { moduleDocumentation ->
+            includes.from(moduleDocumentation)
+          }
           platform.set(Platform.jvm)
           jdkVersion.set(JavaVersion.VERSION_11.ordinal)
           sourceLink {
-            localDirectory.set(file("src/main/kotlin"))
+            localDirectory.set(this@project.file("src/main/kotlin"))
             remoteUrl.set(
                 URL(
                     "https://github.com/c-fraser/connekt/tree/main/${this@project.name}/src/main/kotlin"))

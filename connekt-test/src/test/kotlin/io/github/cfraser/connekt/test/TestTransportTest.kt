@@ -13,16 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package io.github.cfraser.connekt.api
+package io.github.cfraser.connekt.test
 
-/** The [InternalConnektApi] annotation is applied to **internal** *connekt* APIs. */
-@Retention(value = AnnotationRetention.BINARY)
-@Target(
-    AnnotationTarget.CLASS,
-    AnnotationTarget.FUNCTION,
-    AnnotationTarget.TYPEALIAS,
-    AnnotationTarget.PROPERTY)
-@RequiresOptIn(
-    level = RequiresOptIn.Level.ERROR,
-    message = "This is an internal 'connekt' API that should not be used externally.")
-annotation class InternalConnektApi
+import kotlin.test.Test
+
+class TestTransportTest {
+
+  @Test
+  fun testTestTransport() {
+    TestTransport().test()
+  }
+}

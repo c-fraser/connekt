@@ -1,7 +1,9 @@
+@file:OptIn(ExperimentalTransport::class)
 @file:Suppress("PackageDirectoryMismatch")
 // This file was automatically generated from README.md by Knit tool. Do not edit.
 package io.github.cfraser.connekt.example.knit.transportExample01
 
+import io.github.cfraser.connekt.api.ExperimentalTransport
 import io.github.cfraser.connekt.rsocket.RSocketTransport
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking

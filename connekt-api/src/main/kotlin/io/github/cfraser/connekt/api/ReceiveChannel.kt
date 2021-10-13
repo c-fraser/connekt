@@ -20,14 +20,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.ReceiveChannel as KotlinxCoroutinesReceiveChannel
 import kotlinx.coroutines.future.future
+import kotlinx.coroutines.runBlocking
 
 /**
- * [ReceiveChannel] is a [KotlinxCoroutinesReceiveChannel] plus [receiveAsync] which enables
- * idiomatic non-blocking usage from *Java* code.
+ * [ReceiveChannel] is a [KotlinxCoroutinesReceiveChannel] plus [receiveSync] and [receiveAsync]
+ * which enables idiomatic usage from *Java* code.
  *
  * @see KotlinxCoroutinesReceiveChannel
  */
 interface ReceiveChannel<out E> : KotlinxCoroutinesReceiveChannel<E> {
+
+  /** Synchronously [receive] the next *element* from this channel. */
+  fun receiveSync(): E {
+    return runBlocking(Dispatchers.IO) { receive() }
+  }
 
   /**
    * Asynchronously [receive] the next *element* from this channel.
