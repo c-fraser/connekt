@@ -7,10 +7,10 @@ import org.junit.jupiter.api.Tag
 import kotlin.test.Test
 
 @Tag("integration")
-class TransportExample01Test {
+class RSocketTransportExampleTest {
   @Test
-  fun testTransportExample01() {
-  captureOutput("TransportExample01") { io.github.cfraser.connekt.example.knit.transportExample01.main() }.verifyOutputLines(
+  fun testRsocketTransportExample01() {
+  captureOutput("RsocketTransportExample01") { io.github.cfraser.connekt.example.knit.rsocketTransportExample01.main() }.verifyOutputLines(
       "Hello, world!"
   )
   }

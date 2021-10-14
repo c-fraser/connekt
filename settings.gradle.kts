@@ -6,7 +6,6 @@ pluginManagement {
   val jreleaserVersion: String by settings
   val versionsVersion: String by settings
   val dokkaVersion: String by settings
-  val dockerApiVersion: String by settings
 
   plugins {
     kotlin("jvm") version kotlinVersion
@@ -16,7 +15,6 @@ pluginManagement {
     id("org.jreleaser") version jreleaserVersion
     id("com.github.ben-manes.versions") version versionsVersion
     id("org.jetbrains.dokka") version dokkaVersion
-    id("com.bmuschko.docker-remote-api") version dockerApiVersion
   }
 
   repositories {

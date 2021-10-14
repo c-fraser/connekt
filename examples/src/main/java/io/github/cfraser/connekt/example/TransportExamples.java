@@ -15,8 +15,11 @@ limitations under the License.
 */
 package io.github.cfraser.connekt.example;
 
+import io.github.cfraser.connekt.api.Transport;
+import io.github.cfraser.connekt.redis.RedisTransport;
 import io.github.cfraser.connekt.rsocket.AsyncQueueDestinationResolver;
 import io.github.cfraser.connekt.rsocket.RSocketTransport;
+import io.lettuce.core.RedisURI;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -24,18 +27,27 @@ import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class RSocketTransportExample {
+public final class TransportExamples {
 
-  public static void main(String[] args)
-      throws IOException, ExecutionException, InterruptedException {
-    try (var transport =
+  public static void redisExample() throws IOException, ExecutionException, InterruptedException {
+    useTransport(
+        new RedisTransport.Builder()
+            .redisURI(RedisURI.create("localhost", RedisURI.DEFAULT_REDIS_PORT)));
+  }
+
+  public static void rsocketExample() throws IOException, ExecutionException, InterruptedException {
+    useTransport(
         new RSocketTransport.Builder()
             .queueDestinationResolver(
                 (AsyncQueueDestinationResolver)
                     queue ->
                         CompletableFuture.completedFuture(
-                            Collections.singleton(new InetSocketAddress(8787))))
-            .build()) {
+                            Collections.singleton(new InetSocketAddress(8787)))));
+  }
+
+  private static void useTransport(Transport.Builder builder)
+      throws IOException, ExecutionException, InterruptedException {
+    try (var transport = builder.build()) {
       var receiveChannel = transport.receiveFrom("print-message");
       var sendChannel = transport.sendTo("print-message");
       var message = receiveChannel.receiveAsync().thenApply(String::new);

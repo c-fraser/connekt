@@ -21,11 +21,17 @@ import kotlinx.knit.test.verifyOutputLines
 import org.junit.jupiter.api.Tag
 
 @Tag("integration")
-class RSocketTransportExampleTest {
+class TransportExamplesTest {
+
+  @Test
+  fun testRedisTransportExample() {
+    captureOutput("JavaRedisTransportExample") { TransportExamples.redisExample() }
+        .verifyOutputLines("Hello, world!")
+  }
 
   @Test
   fun testRsocketTransportExample() {
-    captureOutput("JavaRSocketTransportExample") { RSocketTransportExample.main(emptyArray()) }
+    captureOutput("JavaRSocketTransportExample") { TransportExamples.rsocketExample() }
         .verifyOutputLines("Hello, world!")
   }
 }
