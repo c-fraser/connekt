@@ -23,7 +23,7 @@ via [Maven Central](https://search.maven.org/search?q=g:io.github.c-fraser%20AND
 
 > Java 11+ is required to use the `connekt` libraries.
 
-Use
+[Use](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/use.html)
 a [Transport](https://javadoc.io/doc/io.github.c-fraser/connekt-api/latest/io/github/cfraser/connekt/api/Transport.html)
 to send and receive a message.
 
