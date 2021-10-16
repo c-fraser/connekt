@@ -28,32 +28,19 @@ import kotlinx.coroutines.runBlocking
  *
  * @see KotlinxCoroutinesReceiveChannel
  */
-interface ReceiveChannel<out E> : KotlinxCoroutinesReceiveChannel<E> {
+interface ReceiveChannel<out T> : KotlinxCoroutinesReceiveChannel<T> {
 
-  /** Synchronously [receive] the next *element* from this channel. */
-  fun receiveSync(): E {
+  /** Synchronously [receive] the next *message* from this channel. */
+  fun receiveSync(): T {
     return runBlocking(Dispatchers.IO) { receive() }
   }
 
   /**
-   * Asynchronously [receive] the next *element* from this channel.
+   * Asynchronously [receive] the next *message* from this channel.
    *
    * @return the [CompletableFuture] containing the result of the asynchronous operation
    */
-  fun receiveAsync(): CompletableFuture<out E> {
+  fun receiveAsync(): CompletableFuture<out T> {
     return GlobalScope.future(Dispatchers.IO) { receive() }
-  }
-
-  companion object {
-
-    /**
-     * Use the [KotlinxCoroutinesReceiveChannel] as a [ReceiveChannel].
-     *
-     * @return the [ReceiveChannel]
-     */
-    @InternalConnektApi
-    fun <E> KotlinxCoroutinesReceiveChannel<E>.asReceiveChannel(): ReceiveChannel<E> {
-      return object : KotlinxCoroutinesReceiveChannel<E> by this, ReceiveChannel<E> {}
-    }
   }
 }

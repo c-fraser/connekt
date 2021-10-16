@@ -15,9 +15,13 @@ limitations under the License.
 */
 package io.github.cfraser.connekt.test
 
+import io.github.cfraser.connekt.api.Deserializer
+import io.github.cfraser.connekt.api.ReceiveChannel
+import io.github.cfraser.connekt.api.Serializer
 import io.github.cfraser.connekt.api.Transport
 import java.time.Duration
 import java.util.UUID
+import java.util.function.Supplier
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.Job
@@ -34,14 +38,35 @@ private val logger = KotlinLogging.logger {}
 /**
  * *Test* the [Transport].
  *
- * Verify the sending and receiving or messages through queues.
+ * Verify the sending and receiving of random [String] data through queues.
  */
 fun Transport.test() {
+  test(
+      { UUID.randomUUID().toString() },
+      { message -> message.toByteArray() },
+      { byteArray -> String(byteArray) })
+}
+
+/**
+ * *Test* the [Transport].
+ *
+ * Verify the sending and receiving of messages through queues.
+ *
+ * @param T the type to send and receive
+ * @param messageSupplier the [Supplier] for test message data
+ * @param serializer the [Serializer] for [T]
+ * @param deserializer the [Deserializer] for [T]
+ */
+fun <T> Transport.test(
+    messageSupplier: Supplier<T>,
+    serializer: Serializer<T>,
+    deserializer: Deserializer<T>
+) {
   use { transport ->
     val numberOfMessages = 1_000
-    val sendMessages = (1..numberOfMessages).map { UUID.randomUUID().toString() }
+    val sendMessages = (1..numberOfMessages).map { messageSupplier.get() }
     val numberOfQueues = 5
-    val receivedMessages = arrayOfNulls<MutableList<String>>(numberOfQueues)
+    val receivedMessages = arrayOfNulls<MutableList<T>>(numberOfQueues)
 
     runBlocking {
       val jobs = mutableListOf<Job>()
@@ -49,18 +74,16 @@ fun Transport.test() {
       repeat(numberOfQueues) { i ->
         receivedMessages[i] = mutableListOf()
 
-        val queue = "queue-$i"
-        val sendChannel = transport.sendTo(queue)
-        val receiveChannel = transport.receiveFrom(queue)
+        val queue = "$i"
+        val sendChannel = transport.sendTo(queue, serializer)
+        val receiveChannel: ReceiveChannel<T> = transport.receiveFrom(queue, deserializer)
 
         jobs +=
             launch {
               receivedMessages[i]!!.run {
-                for (byteArray in receiveChannel) {
-                  this +=
-                      String(byteArray).also { message ->
-                        logger.debug { "Received message $message to queue $queue" }
-                      }
+                for (message in receiveChannel) {
+                  this += message
+                  logger.debug { "Received message $message from queue $queue" }
                   if (size == numberOfMessages) cancel()
                 }
               }
@@ -70,9 +93,9 @@ fun Transport.test() {
 
         jobs +=
             launch {
-              sendMessages.map { message -> message.toByteArray() }.forEach { message ->
+              sendMessages.forEach { message ->
                 sendChannel.send(message)
-                logger.debug { "Sent message ${String(message)} to queue $queue" }
+                logger.debug { "Sent message $message to queue $queue" }
               }
             }
       }
@@ -80,7 +103,7 @@ fun Transport.test() {
       withTimeout(Duration.ofSeconds(10).toMillis()) { jobs.joinAll() }
     }
 
-    receivedMessages.forEach { assertTrue { it!!.containsAll(sendMessages) } }
+    receivedMessages.forEach { messages -> assertTrue { messages!!.containsAll(sendMessages) } }
 
     with(transport.metrics()) {
       assertEquals(0L, receiveErrors)

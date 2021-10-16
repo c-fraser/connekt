@@ -15,8 +15,6 @@ limitations under the License.
 */
 package io.github.cfraser.connekt.api
 
-import io.github.cfraser.connekt.api.ReceiveChannel.Companion.asReceiveChannel
-import io.github.cfraser.connekt.api.SendChannel.Companion.asSendChannel
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.atomicfu.atomic
@@ -24,6 +22,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel as KotlinxCoroutinesReceiveChannel
+import kotlinx.coroutines.channels.SendChannel as KotlinxCoroutinesSendChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -36,9 +36,8 @@ import mu.KotlinLogging
  * [Transport] provides message sending and receiving capabilities using a message queuing
  * technology.
  *
- * Messages are asynchronously sent to a *queue* using the [SendChannel] returned by [sendTo], and
- * messages are asynchronously received from a *queue* using the [ReceiveChannel] returned by
- * [receiveFrom].
+ * Messages are sent to a *queue* using the [SendChannel] returned by [sendTo], and messages are
+ * received from a *queue* using the [ReceiveChannel] returned by [receiveFrom].
  */
 interface Transport : Closeable {
 
@@ -51,12 +50,33 @@ interface Transport : Closeable {
   fun receiveFrom(queue: String): ReceiveChannel<ByteArray>
 
   /**
+   * Initialize a [ReceiveChannel] to [ReceiveChannel.receive] *deserialized* messages from the
+   * [queue].
+   *
+   * @param T the type to convert the received bytes to
+   * @param queue the *queue* to receive messages from
+   * @param deserializer the [Deserializer] to use to deserialize the received messages
+   * @return the [ReceiveChannel]
+   */
+  fun <T> receiveFrom(queue: String, deserializer: Deserializer<T>): ReceiveChannel<T>
+
+  /**
    * Initialize a [SendChannel] to [SendChannel.send] messages to the [queue].
    *
    * @param queue the *queue* to send messages to
    * @return the [SendChannel]
    */
   fun sendTo(queue: String): SendChannel<ByteArray>
+
+  /**
+   * Initialize a [SendChannel] to [SendChannel.send] *serialized* messages to the [queue].
+   *
+   * @param T the type to convert to bytes
+   * @param queue the *queue* to send messages to
+   * @param serializer the [Serializer] to use to serialize the messages to send
+   * @return the [SendChannel]
+   */
+  fun <T> sendTo(queue: String, serializer: Serializer<T>): SendChannel<T>
 
   /**
    * Get the [Metrics] for the [Transport].
@@ -114,60 +134,38 @@ interface Transport : Closeable {
     abstract suspend fun send(queue: String, byteArray: ByteArray)
 
     /**
-     * Initialize a [ReceiveChannel] to [receive] messages from the [queue] in a [GlobalScope]
-     * coroutine.
+     * Return a [ReceiveChannel] for the [queue].
      *
      * Subsequent invocations of [receiveFrom] for a *queue* return the [ReceiveChannel] from the
      * [receiveChannels] cache.
-     *
-     * @param queue the *queue* to receive messages from
-     * @return the [ReceiveChannel]
      */
     override fun receiveFrom(queue: String): ReceiveChannel<ByteArray> {
-      return receiveChannels.computeIfAbsent(queue) { _queue ->
-        GlobalScope.produce<ByteArray>(Dispatchers.IO) {
-          receive(_queue)
-              .catch { throwable ->
-                receiveErrors += 1L
-                logger.warn(throwable) { "Failed to receive from queue $_queue" }
-              }
-              .onEach { byteArray ->
-                messagesReceived += 1L
-                logger.debug { "Received ${byteArray.size} bytes from queue $_queue" }
-              }
-              .collect { byteArray -> channel.send(byteArray) }
-        }
-            .run { asReceiveChannel() }
-      }
+      return receiveChannels.computeIfAbsent(queue, ::initializeReceiveChannel)
     }
 
     /**
-     * Initialize a [SendChannel] to [send] messages to the [queue] in a [GlobalScope] coroutine.
+     * Initialize a [ReceiveChannel] to [receiveFrom] the [queue] then [Deserializer.deserialize]
+     * the received messages.
+     */
+    override fun <T> receiveFrom(queue: String, deserializer: Deserializer<T>): ReceiveChannel<T> {
+      return receiveFrom(queue) + deserializer
+    }
+
+    /**
+     * Return a [SendChannel] for the [queue].
      *
      * Subsequent invocations of [sendTo] for a *queue* return the [SendChannel] from the
      * [sendChannels] cache.
-     *
-     * @param queue the *queue* to send messages to
-     * @return the [SendChannel]
      */
     override fun sendTo(queue: String): SendChannel<ByteArray> {
-      return sendChannels.computeIfAbsent(queue) { _queue ->
-        Channel<ByteArray>()
-            .also { channel ->
-              GlobalScope.launch(Dispatchers.IO) {
-                for (message in channel) runCatching { send(_queue, message) }
-                    .onFailure { throwable ->
-                      sendErrors += 1L
-                      logger.warn(throwable) { "Failed to send message to queue $_queue" }
-                    }
-                    .onSuccess {
-                      messagesSent += 1L
-                      logger.debug { "Sent ${message.size} bytes to queue $_queue" }
-                    }
-              }
-            }
-            .run { asSendChannel() }
-      }
+      return sendChannels.computeIfAbsent(queue, ::initializeSendChannel)
+    }
+
+    /**
+     * Initialize a [SendChannel] to [Serializer.serialize] the messages then [sendTo] the [queue].
+     */
+    override fun <T> sendTo(queue: String, serializer: Serializer<T>): SendChannel<T> {
+      return sendTo(queue) + serializer
     }
 
     /**
@@ -183,7 +181,113 @@ interface Transport : Closeable {
             receiveErrors = receiveErrors.value,
             sendErrors = sendErrors.value)
 
+    /**
+     * Initialize a [ReceiveChannel] to [receive] messages from the [queue] in a [GlobalScope]
+     * coroutine.
+     *
+     * @param queue the *queue* to receive messages from
+     * @return the [ReceiveChannel]
+     */
+    private fun initializeReceiveChannel(queue: String): ReceiveChannel<ByteArray> {
+      return GlobalScope.produce<ByteArray>(Dispatchers.IO) {
+            receive(queue)
+                .catch { throwable ->
+                  receiveErrors += 1L
+                  logger.error(throwable) { "Failed to receive from queue $queue" }
+                }
+                .onEach { byteArray ->
+                  messagesReceived += 1L
+                  logger.debug { "Received ${byteArray.size} bytes from queue $queue" }
+                }
+                .collect { byteArray -> channel.send(byteArray) }
+          }
+          .asReceiveChannel()
+    }
+
+    /**
+     * Initialize a [SendChannel] to [send] messages to the [queue] in a [GlobalScope] coroutine.
+     *
+     * @param queue the *queue* to send messages to
+     * @return the [SendChannel]
+     */
+    private fun initializeSendChannel(queue: String): SendChannel<ByteArray> {
+      val channel = Channel<ByteArray>()
+      GlobalScope.launch(Dispatchers.IO) {
+        for (message in channel) runCatching { send(queue, message) }
+            .onFailure { throwable ->
+              sendErrors += 1L
+              logger.error(throwable) { "Failed to send message to queue $queue" }
+            }
+            .onSuccess {
+              messagesSent += 1L
+              logger.debug { "Sent ${message.size} bytes to queue $queue" }
+            }
+      }
+      return channel.asSendChannel()
+    }
+
     private companion object {
+
+      /**
+       * Use the [KotlinxCoroutinesReceiveChannel] as a [ReceiveChannel].
+       *
+       * @return the [ReceiveChannel]
+       */
+      fun <T> KotlinxCoroutinesReceiveChannel<T>.asReceiveChannel(): ReceiveChannel<T> {
+        return object : KotlinxCoroutinesReceiveChannel<T> by this, ReceiveChannel<T> {}
+      }
+
+      /**
+       * Use the [KotlinxCoroutinesSendChannel] as a [SendChannel].
+       *
+       * @return the [SendChannel]
+       */
+      fun <T> KotlinxCoroutinesSendChannel<T>.asSendChannel(): SendChannel<T> {
+        return object : KotlinxCoroutinesSendChannel<T> by this, SendChannel<T> {}
+      }
+
+      /**
+       * Convert the [ReceiveChannel] of [ByteArray] to a [ReceiveChannel] of [T] that uses the
+       * [deserializer] to [Deserializer.deserialize] received messages.
+       *
+       * @param T the type to convert the received bytes to
+       * @param deserializer the [Deserializer] to use to deserialize the received messages
+       * @return the [ReceiveChannel] of [T]
+       */
+      operator fun <T> ReceiveChannel<ByteArray>.plus(
+          deserializer: Deserializer<T>
+      ): ReceiveChannel<T> {
+        return run receiveChannel@{
+          GlobalScope.produce<T>(Dispatchers.Default) {
+                for (byteArray in this@receiveChannel) deserializer
+                    .runCatching { deserialize(byteArray) }
+                    .onFailure { throwable ->
+                      logger.error(throwable) { "Failed to deserialize message" }
+                    }
+                    .onSuccess { message -> channel.send(message) }
+              }
+              .asReceiveChannel()
+        }
+      }
+
+      /**
+       * Convert the [SendChannel] of [ByteArray] to a [SendChannel] of [T] that uses the
+       * [serializer] to [Serializer.serialize] sent messages.
+       *
+       * @param T the type to convert to bytes
+       * @param serializer the [Serializer] to use to serialize the messages to send
+       * @return the [SendChannel] of [T]
+       */
+      operator fun <T> SendChannel<ByteArray>.plus(serializer: Serializer<T>): SendChannel<T> {
+        val channel = Channel<T>()
+        GlobalScope.launch(Dispatchers.IO) {
+          for (message in channel) serializer
+              .runCatching { serialize(message) }
+              .onFailure { throwable -> logger.error(throwable) { "Failed to serialize message" } }
+              .onSuccess { byteArray -> send(byteArray) }
+        }
+        return channel.asSendChannel()
+      }
 
       val logger = KotlinLogging.logger {}
     }

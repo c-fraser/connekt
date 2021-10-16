@@ -21,4 +21,6 @@ dependencies {
   api("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:$kotlinxCoroutinesVersion")
   api("io.github.microutils:kotlin-logging-jvm:$kotlinLoggingVersion")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$kotlinxCoroutinesVersion")
+
+  testImplementation(project(":connekt-test"))
 }

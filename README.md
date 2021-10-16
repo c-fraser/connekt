@@ -65,7 +65,7 @@ use { transport ->
 
 <!--- TEST_NAME RedisTransportExampleTest --> 
 
-Build
+[Build](https://javadoc.io/doc/io.github.c-fraser/connekt-redis/latest/io/github/cfraser/connekt/redis/RedisTransport.Builder.html)
 a [RedisTransport](https://javadoc.io/doc/io.github.c-fraser/connekt-redis/latest/io/github/cfraser/connekt/redis/RedisTransport.html)
 to send and receive messages using [Redis Pub/Sub](https://redis.io/topics/pubsub).
 
@@ -100,7 +100,7 @@ Hello, world!
 
 <!--- TEST_NAME RSocketTransportExampleTest --> 
 
-Build
+[Build](https://javadoc.io/doc/io.github.c-fraser/connekt-rsocket/latest/io/github/cfraser/connekt/rsocket/RSocketTransport.Builder.html)
 a [RSocketTransport](https://javadoc.io/doc/io.github.c-fraser/connekt-rsocket/latest/io/github/cfraser/connekt/rsocket/RSocketTransport.html)
 to send and receive messages using *RSocket*.
 

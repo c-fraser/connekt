@@ -13,14 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package io.github.cfraser.connekt.test
+package io.github.cfraser.connekt.api
 
-import kotlin.test.Test
+import io.github.cfraser.connekt.test.LocalTransport
+import io.github.cfraser.connekt.test.test
+import org.junit.jupiter.api.Test
 
-class TestTransportTest {
+class TransportTest {
 
-  @Test
-  fun testTestTransport() {
-    TestTransport().test()
-  }
+  @Test fun testTransport() = LocalTransport().test()
 }

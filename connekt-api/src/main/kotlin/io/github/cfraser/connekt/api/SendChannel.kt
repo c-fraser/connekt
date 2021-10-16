@@ -28,32 +28,19 @@ import kotlinx.coroutines.runBlocking
  *
  * @see KotlinxCoroutinesSendChannel
  */
-interface SendChannel<in E> : KotlinxCoroutinesSendChannel<E> {
+interface SendChannel<in T> : KotlinxCoroutinesSendChannel<T> {
 
-  /** Synchronously [send] the [element] to this channel. */
-  fun sendSync(element: E) {
-    runBlocking(Dispatchers.IO) { send(element) }
+  /** Synchronously [send] the [message] to this channel. */
+  fun sendSync(message: T) {
+    runBlocking(Dispatchers.IO) { send(message) }
   }
 
   /**
-   * Asynchronously [send] the [element] to this channel.
+   * Asynchronously [send] the [message] to this channel.
    *
    * @return the [CompletableFuture] containing the result of the asynchronous operation
    */
-  fun sendAsync(element: E): CompletableFuture<Unit> {
-    return GlobalScope.future(Dispatchers.IO) { send(element) }
-  }
-
-  companion object {
-
-    /**
-     * Use the [KotlinxCoroutinesSendChannel] as a [SendChannel].
-     *
-     * @return the [SendChannel]
-     */
-    @InternalConnektApi
-    fun <E> KotlinxCoroutinesSendChannel<E>.asSendChannel(): SendChannel<E> {
-      return object : KotlinxCoroutinesSendChannel<E> by this, SendChannel<E> {}
-    }
+  fun sendAsync(message: T): CompletableFuture<Unit> {
+    return GlobalScope.future(Dispatchers.IO) { send(message) }
   }
 }

@@ -38,4 +38,10 @@ pluginManagement {
 
 rootProject.name = "connekt"
 
-include("connekt-api", "connekt-redis", "connekt-rsocket", "connekt-test", "examples")
+include(
+    "connekt-api",
+    "connekt-jackson",
+    "connekt-redis",
+    "connekt-rsocket",
+    "connekt-test",
+    "examples")
