@@ -5,6 +5,7 @@ package io.github.cfraser.connekt.example.knit.rsocketTransportExample01
 
 import io.github.cfraser.connekt.api.ExperimentalTransport
 import io.github.cfraser.connekt.example.knit.transportExample01.example01
+import io.github.cfraser.connekt.example.knit.transportExample02.example02
 import io.github.cfraser.connekt.rsocket.RSocketTransport
 import java.net.InetSocketAddress
 
@@ -13,5 +14,8 @@ fun main() {
 RSocketTransport.Builder()
       .queueDestinationResolver { setOf(InetSocketAddress(8787)) }
       .build()
-    .example01()
+    .use { transport -> 
+        example01(transport)
+        example02(transport)
+    }
 }

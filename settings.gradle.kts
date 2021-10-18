@@ -6,6 +6,7 @@ pluginManagement {
   val jreleaserVersion: String by settings
   val versionsVersion: String by settings
   val dokkaVersion: String by settings
+  val protobufGradleVersion: String by settings
 
   plugins {
     kotlin("jvm") version kotlinVersion
@@ -15,6 +16,7 @@ pluginManagement {
     id("org.jreleaser") version jreleaserVersion
     id("com.github.ben-manes.versions") version versionsVersion
     id("org.jetbrains.dokka") version dokkaVersion
+    id("com.google.protobuf") version protobufGradleVersion
   }
 
   repositories {
@@ -41,6 +43,8 @@ rootProject.name = "connekt"
 include(
     "connekt-api",
     "connekt-jackson",
+    "connekt-local",
+    "connekt-protobuf",
     "connekt-redis",
     "connekt-rsocket",
     "connekt-test",

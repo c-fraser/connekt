@@ -15,8 +15,8 @@ limitations under the License.
 */
 package io.github.cfraser.connekt.api
 
-import io.github.cfraser.connekt.test.LocalTransport
-import io.github.cfraser.connekt.test.test
+import io.github.cfraser.connekt.local.LocalTransport
+import io.github.cfraser.connekt.local.test
 import org.junit.jupiter.api.Test
 
 class TransportTest {

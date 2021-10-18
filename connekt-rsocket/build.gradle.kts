@@ -25,5 +25,3 @@ dependencies {
   testImplementation(project(":connekt-test"))
   testImplementation("io.rsocket:rsocket-transport-local:$rsocketVersion")
 }
-
-tasks.test { systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug") }

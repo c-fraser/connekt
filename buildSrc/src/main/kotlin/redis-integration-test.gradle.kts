@@ -27,6 +27,5 @@ tasks {
   named<Test>("integrationTest") {
     dependsOn(startRedisContainer)
     finalizedBy(stopRedisContainer)
-    systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "debug")
   }
 }

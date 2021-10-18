@@ -20,25 +20,55 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.cfraser.connekt.api.Deserializer
 import io.github.cfraser.connekt.api.Serializer
 
-/** The [ObjectMapper] used for serialization and deserialization. */
-val OBJECT_MAPPER: ObjectMapper by lazy { jacksonObjectMapper() }
-
 /**
- * Initialize a [Serializer] which uses [OBJECT_MAPPER] to serialize instances of [T].
- *
- * @param T the type to serialize
- * @return the [Serializer]
+ * The [JacksonSerDe] object provides functions to create [Serializer] and [Deserializer] instances
+ * that use [Jackson](https://github.com/FasterXML/jackson) for serialization and deserialization.
  */
-inline fun <reified T : Any> jacksonSerializer(): Serializer<T> = Serializer { message ->
-  OBJECT_MAPPER.writeValueAsBytes(message)
-}
+object JacksonSerDe {
 
-/**
- * Initialize a [Deserializer] which uses [OBJECT_MAPPER] to construct instances of [T].
- *
- * @param T the type to deserialize
- * @return the [Deserializer]
- */
-inline fun <reified T : Any> jacksonDeserializer(): Deserializer<T> = Deserializer { byteArray ->
-  OBJECT_MAPPER.readValue(byteArray, T::class.java)
+  /** A default [ObjectMapper] to use for serialization and deserialization. */
+  @JvmStatic val OBJECT_MAPPER: ObjectMapper by lazy { jacksonObjectMapper() }
+
+  /**
+   * Initialize a [Serializer] which uses [objectMapper] to serialize instances of [T].
+   *
+   * @param T the type to serialize
+   * @param objectMapper the [ObjectMapper] to use to serialize instances of [T]
+   * @return the [Serializer]
+   */
+  @JvmOverloads
+  @JvmStatic
+  fun <T : Any> serializer(objectMapper: ObjectMapper = OBJECT_MAPPER): Serializer<T> {
+    return Serializer { message -> objectMapper.writeValueAsBytes(message) }
+  }
+
+  /**
+   * Initialize a [Deserializer] which uses [objectMapper] to construct instances of [T].
+   *
+   * @param T the type to deserialize
+   * @param clazz the [Class] for [T]
+   * @param objectMapper the [ObjectMapper] to use to deserialize instances of [T]
+   * @return the [Deserializer]
+   */
+  @JvmOverloads
+  @JvmStatic
+  fun <T : Any> deserializer(
+      clazz: Class<T>,
+      objectMapper: ObjectMapper = OBJECT_MAPPER
+  ): Deserializer<T> {
+    return Deserializer { byteArray -> objectMapper.readValue(byteArray, clazz) }
+  }
+
+  /**
+   * Initialize a [Deserializer] which uses [objectMapper] to construct instances of [T].
+   *
+   * @param T the type to deserialize
+   * @param objectMapper the [ObjectMapper] to use to deserialize instances of [T]
+   * @return the [Deserializer]
+   */
+  inline fun <reified T : Any> deserializer(
+      objectMapper: ObjectMapper = OBJECT_MAPPER
+  ): Deserializer<T> {
+    return deserializer(T::class.java, objectMapper)
+  }
 }

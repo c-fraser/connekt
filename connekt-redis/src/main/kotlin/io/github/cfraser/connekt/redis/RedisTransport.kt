@@ -26,7 +26,6 @@ import io.lettuce.core.pubsub.StatefulRedisPubSubConnection
 import io.lettuce.core.pubsub.api.reactive.ChannelMessage
 import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands
 import io.lettuce.core.resource.ClientResources
-import io.lettuce.core.resource.DefaultClientResources
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled
@@ -53,9 +52,10 @@ import mu.KotlinLogging
  *
  * > [RedisTransport] is *thread-safe* thus access from multiple concurrent threads is allowed.
  *
- * @param redisClient the [RedisClient] to use to establish pub/sub connections to a *Redis* server.
+ * @property redisClient the [RedisClient] to use to establish pub/sub connections to a *Redis*
+ * server
  */
-class RedisTransport private constructor(redisClient: RedisClient) : Transport.Base() {
+class RedisTransport private constructor(private val redisClient: RedisClient) : Transport.Base() {
 
   /**
    * The [SharedFlow] which receives [ChannelMessage] data for all
@@ -118,6 +118,7 @@ class RedisTransport private constructor(redisClient: RedisClient) : Transport.B
         logger.warn(it) { "Failed to close connection" }
       }
     }
+    redisClient.shutdown()
   }
 
   /**
@@ -127,8 +128,8 @@ class RedisTransport private constructor(redisClient: RedisClient) : Transport.B
   class Builder : Transport.Builder {
 
     private var redisURI: RedisURI by Delegates.notNull()
-    private var clientResources: ClientResources = DefaultClientResources.create()
-    private var clientOptions: ClientOptions = ClientOptions.create()
+    private var clientResources: ClientResources? = null
+    private var clientOptions: ClientOptions? = null
 
     /**
      * Connect to the *Redis* server with the [redisURI].
@@ -162,8 +163,10 @@ class RedisTransport private constructor(redisClient: RedisClient) : Transport.B
      * @return the [Transport]
      */
     override fun build(): Transport {
-      val redisClient = RedisClient.create(clientResources, redisURI)
-      redisClient.options = clientOptions
+      val redisClient =
+          if (clientResources != null) RedisClient.create(clientResources, redisURI)
+          else RedisClient.create(redisURI)
+      if (clientOptions != null) redisClient.options = clientOptions
       return RedisTransport(redisClient)
     }
   }

@@ -3,20 +3,19 @@
 package io.github.cfraser.connekt.example.knit.transportExample01
 
 import io.github.cfraser.connekt.api.Transport
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-fun Transport.example01() {
+fun example01(transport: Transport) {
 
-use { transport ->
-    val receiveChannel = transport.receiveFrom("print-message")
-    val sendChannel = transport.sendTo("print-message")
-    runBlocking {
-      val message = async { String(receiveChannel.receive()) }
-      delay(1_000)
-      sendChannel.send("Hello, world!".toByteArray())
-      println(message.await())
-    }
-  }
+val receiveChannel = transport.receiveFrom("print-message")
+val sendChannel = transport.sendTo("print-message")
+runBlocking(Dispatchers.IO) {
+  val message = async { String(receiveChannel.receive()) }
+  delay(1_000)
+  sendChannel.send("Hello, world!".toByteArray())
+  println(message.await())
+}
 }

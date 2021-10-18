@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package io.github.cfraser.connekt.protobuf;
+
+option java_multiple_files = true;
+
+message TestMessage {
+  string a = 1;
+  int32 b = 2;
+  bool c = 3;
+  double d = 4;
+  int64 e = 5;
+}

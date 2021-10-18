@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package io.github.cfraser.connekt.jackson
+package io.github.cfraser.connekt.protobuf
 
 import io.github.cfraser.connekt.local.LocalTransport
 import io.github.cfraser.connekt.local.test
@@ -22,12 +22,12 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class JacksonSerDeTest {
+class ProtobufSerDeTest {
 
   @Test
   fun testSerDe() {
-    val serializer = JacksonSerDe.serializer<TestMessage>()
-    val deserializer = JacksonSerDe.deserializer<TestMessage>()
+    val serializer = ProtobufSerDe.serializer<TestMessage>()
+    val deserializer = ProtobufSerDe.deserializer<TestMessage>()
     val testMessage = testMessage()
     val serialized = serializer.serialize(testMessage)
     val deserialized = deserializer.deserialize(serialized)
@@ -37,19 +37,18 @@ class JacksonSerDeTest {
   @Test
   fun testTransportSerDe() {
     LocalTransport()
-        .test<TestMessage>(::testMessage, JacksonSerDe.serializer(), JacksonSerDe.deserializer())
+        .test<TestMessage>(::testMessage, ProtobufSerDe.serializer(), ProtobufSerDe.deserializer())
   }
-
-  data class TestMessage(val a: String, var b: Int, val c: Boolean, var d: Double, val e: Long)
 
   companion object {
 
-    fun testMessage() =
-        TestMessage(
-            UUID.randomUUID().toString(),
-            Random.nextInt(),
-            Random.nextBoolean(),
-            Random.nextDouble(),
-            Random.nextLong())
+    fun testMessage(): TestMessage =
+        TestMessage.newBuilder()
+            .setA(UUID.randomUUID().toString())
+            .setB(Random.nextInt())
+            .setC(Random.nextBoolean())
+            .setD(Random.nextDouble())
+            .setE(Random.nextLong())
+            .build()
   }
 }

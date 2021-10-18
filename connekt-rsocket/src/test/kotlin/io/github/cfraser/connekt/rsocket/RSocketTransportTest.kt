@@ -17,7 +17,7 @@ package io.github.cfraser.connekt.rsocket
 
 import io.github.cfraser.connekt.api.ExperimentalTransport
 import io.github.cfraser.connekt.api.Transport
-import io.github.cfraser.connekt.test.test
+import io.github.cfraser.connekt.local.test
 import io.rsocket.transport.local.LocalClientTransport
 import io.rsocket.transport.local.LocalServerTransport
 import java.net.InetSocketAddress

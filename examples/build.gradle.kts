@@ -12,4 +12,6 @@ dependencies {
   testImplementation("org.slf4j:slf4j-nop:$slf4jVersion")
 }
 
+configurations.implementation { exclude(group = "org.slf4j", module = "slf4j-simple") }
+
 tasks.withType<Detekt> { enabled = false }

@@ -16,7 +16,7 @@ limitations under the License.
 package io.github.cfraser.connekt.redis
 
 import io.github.cfraser.connekt.api.Transport
-import io.github.cfraser.connekt.test.test
+import io.github.cfraser.connekt.local.test
 import io.lettuce.core.RedisURI
 import kotlin.test.Test
 import org.junit.jupiter.api.Tag

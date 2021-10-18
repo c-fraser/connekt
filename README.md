@@ -10,6 +10,26 @@ Connect Kotlin/Java applications using
 distributed [channels](https://kotlinlang.org/docs/channels.html), augmented with a messaging
 technology to enable horizontal scalability.
 
+## Contents
+
+<!--- TOC -->
+
+* [Overview](#overview)
+* [Usage](#usage)
+    * [Transports](#transports)
+        * [Redis](#redis)
+        * [RSocket](#rsocket)
+        * [Local](#local)
+    * [SerDes](#serdes)
+        * [Jackson](#jackson)
+        * [Protobuf](#protobuf)
+* [License](#license)
+* [Acknowledgements](#acknowledgements)
+
+<!--- END -->
+
+## Overview
+
 The implementations of
 the [connekt-api](https://javadoc.io/doc/io.github.c-fraser/connekt-api/latest/index.html) allow the
 user to leverage distributed messaging transparently through Kotlin coroutine channels. The project
@@ -33,41 +53,68 @@ to send and receive a message.
 
 <!--- INCLUDE
 import io.github.cfraser.connekt.api.Transport
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
-fun Transport.example01() {
+fun example01(transport: Transport) {
 ----- SUFFIX
 }
 -->
 
 ```kotlin 
-use { transport ->
-    val receiveChannel = transport.receiveFrom("print-message")
-    val sendChannel = transport.sendTo("print-message")
-    runBlocking {
-      val message = async { String(receiveChannel.receive()) }
-      delay(1_000)
-      sendChannel.send("Hello, world!".toByteArray())
-      println(message.await())
-    }
-  }
+val receiveChannel = transport.receiveFrom("print-message")
+val sendChannel = transport.sendTo("print-message")
+runBlocking(Dispatchers.IO) {
+  val message = async { String(receiveChannel.receive()) }
+  delay(1_000)
+  sendChannel.send("Hello, world!".toByteArray())
+  println(message.await())
+}
 ```                         
 
-<!--- KNIT transport-example-01.kt --> 
+<!--- KNIT transport-example-01.kt -->
+
+A [Serializer](https://javadoc.io/doc/io.github.c-fraser/connekt-api/latest/io/github/cfraser/connekt/api/Serializer.html)
+or [Deserializer](https://javadoc.io/doc/io.github.c-fraser/connekt-api/latest/io/github/cfraser/connekt/api/Deserializer.html)
+may be provided to enable the `Transport` to automatically handle the (de)serialization of messages.
+
+<!--- PREFIX
+@file:Suppress("PackageDirectoryMismatch")
+-->
+
+<!--- INCLUDE
+import io.github.cfraser.connekt.api.Transport
+
+fun example02(transport: Transport) {
+----- SUFFIX
+}
+-->
+
+```kotlin 
+val receiveChannel = transport.receiveFrom("print-message") { byteArray -> String(byteArray) }
+val sendChannel = transport.sendTo("print-message") { message: String -> message.toByteArray() }
+sendChannel.sendSync("Hello, world!")
+println(receiveChannel.receiveSync())
+```                         
+
+<!--- KNIT transport-example-02.kt --> 
 
 > Refer
 > to [these examples](https://github.com/c-fraser/connekt/tree/main/examples/src/main/java/io/github/cfraser/connekt/example/TransportExamples.java)
 > to see how to use `Transport` in **Java**.
 
-### [Redis](https://redis.io/)
+### Transports
+
+#### Redis
 
 <!--- TEST_NAME RedisTransportExampleTest --> 
 
-[Build](https://javadoc.io/doc/io.github.c-fraser/connekt-redis/latest/io/github/cfraser/connekt/redis/RedisTransport.Builder.html)
+Use [connekt-redis](https://search.maven.org/artifact/io.github.c-fraser/connekt-redis)
+to [build](https://javadoc.io/doc/io.github.c-fraser/connekt-redis/latest/io/github/cfraser/connekt/redis/RedisTransport.Builder.html)
 a [RedisTransport](https://javadoc.io/doc/io.github.c-fraser/connekt-redis/latest/io/github/cfraser/connekt/redis/RedisTransport.html)
-to send and receive messages using [Redis Pub/Sub](https://redis.io/topics/pubsub).
+that sends and receives messages using [Redis Pub/Sub](https://redis.io/topics/pubsub).
 
 <!--- PREFIX
 @file:Suppress("PackageDirectoryMismatch")
@@ -75,12 +122,16 @@ to send and receive messages using [Redis Pub/Sub](https://redis.io/topics/pubsu
 
 <!--- INCLUDE
 import io.github.cfraser.connekt.example.knit.transportExample01.example01
+import io.github.cfraser.connekt.example.knit.transportExample02.example02
 import io.github.cfraser.connekt.redis.RedisTransport
 import io.lettuce.core.RedisURI
 
 fun main() {
 ----- SUFFIX
-    .example01()
+    .use { transport -> 
+        example01(transport)
+        example02(transport)
+    }
 }
 -->
 
@@ -94,15 +145,17 @@ RedisTransport.Builder()
 
 <!--- TEST
 Hello, world!
+Hello, world!
 -->
 
-### [RSocket](https://rsocket.io/)
+#### RSocket
 
 <!--- TEST_NAME RSocketTransportExampleTest --> 
 
-[Build](https://javadoc.io/doc/io.github.c-fraser/connekt-rsocket/latest/io/github/cfraser/connekt/rsocket/RSocketTransport.Builder.html)
+Use [connekt-rsocket](https://search.maven.org/artifact/io.github.c-fraser/connekt-rsocket)
+to [build](https://javadoc.io/doc/io.github.c-fraser/connekt-rsocket/latest/io/github/cfraser/connekt/rsocket/RSocketTransport.Builder.html)
 a [RSocketTransport](https://javadoc.io/doc/io.github.c-fraser/connekt-rsocket/latest/io/github/cfraser/connekt/rsocket/RSocketTransport.html)
-to send and receive messages using *RSocket*.
+that sends and receives messages using [RSocket](https://rsocket.io/).
 
 <!--- PREFIX
 @file:OptIn(ExperimentalTransport::class)
@@ -112,12 +165,16 @@ to send and receive messages using *RSocket*.
 <!--- INCLUDE
 import io.github.cfraser.connekt.api.ExperimentalTransport
 import io.github.cfraser.connekt.example.knit.transportExample01.example01
+import io.github.cfraser.connekt.example.knit.transportExample02.example02
 import io.github.cfraser.connekt.rsocket.RSocketTransport
 import java.net.InetSocketAddress
 
 fun main() {
 ----- SUFFIX
-    .example01()
+    .use { transport -> 
+        example01(transport)
+        example02(transport)
+    }
 }
 -->
 
@@ -131,7 +188,29 @@ RSocketTransport.Builder()
 
 <!--- TEST
 Hello, world!
+Hello, world!
 -->
+
+#### Local
+
+Use [connekt-local](https://search.maven.org/artifact/io.github.c-fraser/connekt-local)
+to construct
+a [LocalTransport](https://javadoc.io/doc/io.github.c-fraser/connekt-local/latest/io/github/cfraser/connekt/local/LocalTransport.html)
+that sends and receives messages using *in-memory* channels.
+
+### SerDes
+
+#### Jackson
+
+Use [connekt-jackson](https://search.maven.org/artifact/io.github.c-fraser/connekt-jackson)
+to [(de)serialize](https://javadoc.io/doc/io.github.c-fraser/connekt-jackson/latest/io/github/cfraser/connekt/jackson/JacksonSerDe.html)
+messages using [Jackson](https://github.com/FasterXML/jackson).
+
+#### Protobuf
+
+Use [connekt-protobuf](https://search.maven.org/artifact/io.github.c-fraser/connekt-protobuf)
+to [(de)serialize](https://javadoc.io/doc/io.github.c-fraser/connekt-protobuf/latest/io/github/cfraser/connekt/protobuf/ProtobufSerDe.html)
+messages using [Protocol buffers](https://developers.google.com/protocol-buffers).
 
 ## License
 

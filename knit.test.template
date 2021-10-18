@@ -4,9 +4,12 @@ package ${test.package}
 import kotlinx.knit.test.captureOutput
 import kotlinx.knit.test.verifyOutputLines
 import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Timeout
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 
 @Tag("integration")
+@Timeout(30, unit = TimeUnit.SECONDS)
 class ${test.name} {
 <#list cases as case><#assign method = test["mode.${case.param}"]!"custom">
   @Test
