@@ -7,8 +7,8 @@
 [![Apache License 2.0](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 Connect Kotlin/Java applications using
-distributed [channels](https://kotlinlang.org/docs/channels.html), augmented with a messaging
-technology to enable horizontal scalability.
+[channels](https://kotlinlang.org/docs/channels.html) augmented with a messaging technology to
+enable horizontal scalability.
 
 ## Contents
 

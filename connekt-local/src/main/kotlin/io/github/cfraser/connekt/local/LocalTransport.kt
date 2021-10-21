@@ -27,19 +27,20 @@ import kotlinx.coroutines.flow.mapNotNull
  *
  * [LocalTransport] enables *local* testing of the functionality surrounding a [Transport].
  */
-class LocalTransport : Transport.Base() {
+class LocalTransport :
+    Transport by object : Transport.Base() {
 
-  private val mutableSharedFlow = MutableSharedFlow<Pair<String, ByteArray>>()
+      private val mutableSharedFlow = MutableSharedFlow<Pair<String, ByteArray>>()
 
-  override fun CoroutineScope.receive(queue: String): Flow<ByteArray> {
-    return mutableSharedFlow.mapNotNull { (sentTo, byteArray) ->
-      byteArray.takeIf { sentTo == queue }
+      override fun CoroutineScope.receive(queue: String): Flow<ByteArray> {
+        return mutableSharedFlow.mapNotNull { (sentTo, byteArray) ->
+          byteArray.takeIf { sentTo == queue }
+        }
+      }
+
+      override suspend fun send(queue: String, byteArray: ByteArray) {
+        mutableSharedFlow.emit(queue to byteArray)
+      }
+
+      override fun close() {}
     }
-  }
-
-  override suspend fun send(queue: String, byteArray: ByteArray) {
-    mutableSharedFlow.emit(queue to byteArray)
-  }
-
-  override fun close() {}
-}
