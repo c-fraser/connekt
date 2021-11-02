@@ -22,7 +22,7 @@ plugins {
 
 allprojects {
   group = "io.github.c-fraser"
-  version = "0.3.2"
+  version = "0.4.0"
 
   repositories { mavenCentral() }
 }
@@ -86,7 +86,8 @@ subprojects project@{
       dokkaSourceSets {
         named("main") {
           moduleName.set(this@project.name)
-          runCatching { this@project.file("MODULE.md") }.onSuccess { moduleDocumentation ->
+          runCatching { this@project.file("MODULE.md").takeIf { it.exists() }!! }.onSuccess {
+              moduleDocumentation ->
             includes.from(moduleDocumentation)
           }
           platform.set(Platform.jvm)

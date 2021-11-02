@@ -44,6 +44,7 @@ include(
     "connekt-api",
     "connekt-jackson",
     "connekt-local",
+    "connekt-nats",
     "connekt-protobuf",
     "connekt-redis",
     "connekt-rsocket",

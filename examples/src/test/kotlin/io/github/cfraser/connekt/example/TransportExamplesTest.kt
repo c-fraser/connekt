@@ -24,6 +24,12 @@ import org.junit.jupiter.api.Tag
 class TransportExamplesTest {
 
   @Test
+  fun testNatsTransportExample() {
+    captureOutput("JavaNatsTransportExample") { TransportExamples.natsExample() }
+        .verifyOutputLines("Hello, world!")
+  }
+
+  @Test
   fun testRedisTransportExample() {
     captureOutput("JavaRedisTransportExample") { TransportExamples.redisExample() }
         .verifyOutputLines("Hello, world!")

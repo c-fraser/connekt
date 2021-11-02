@@ -16,13 +16,14 @@ enable horizontal scalability.
 
 * [Overview](#overview)
 * [Usage](#usage)
-    * [Transports](#transports)
-        * [Redis](#redis)
-        * [RSocket](#rsocket)
-        * [Local](#local)
-    * [SerDes](#serdes)
-        * [Jackson](#jackson)
-        * [Protobuf](#protobuf)
+  * [Transports](#transports)
+    * [NATS](#nats)
+    * [Redis](#redis)
+    * [RSocket](#rsocket)
+    * [Local](#local)
+  * [SerDes](#serdes)
+    * [Jackson](#jackson)
+    * [Protobuf](#protobuf)
 * [License](#license)
 * [Acknowledgements](#acknowledgements)
 
@@ -107,6 +108,44 @@ println(receiveChannel.receiveSync())
 
 ### Transports
 
+#### NATS
+
+<!--- TEST_NAME NatsTransportExampleTest --> 
+
+Use [connekt-nats](https://search.maven.org/artifact/io.github.c-fraser/connekt-nats)
+to [build](https://javadoc.io/doc/io.github.c-fraser/connekt-redis/latest/io/github/cfraser/connekt/redis/RedisTransport.Builder.html)
+a [NatsTransport](https://javadoc.io/doc/io.github.c-fraser/connekt-nats/latest/io/github/cfraser/connekt/nats/NatsTransport.html)
+that sends and receives messages using [NATS](https://nats.io/).
+
+<!--- PREFIX
+@file:Suppress("PackageDirectoryMismatch")
+-->
+
+<!--- INCLUDE
+import io.github.cfraser.connekt.example.knit.transportExample01.example01
+import io.github.cfraser.connekt.example.knit.transportExample02.example02
+import io.github.cfraser.connekt.nats.NatsTransport
+
+fun main() {
+----- SUFFIX
+    .use { transport -> 
+        example01(transport)
+        example02(transport)
+    }
+}
+-->
+
+```kotlin 
+NatsTransport.Builder().serverURL("nats://localhost:4222").build()
+```                         
+
+<!--- KNIT nats-transport-example-01.kt --> 
+
+<!--- TEST
+Hello, world!
+Hello, world!
+-->
+
 #### Redis
 
 <!--- TEST_NAME RedisTransportExampleTest --> 
@@ -136,9 +175,7 @@ fun main() {
 -->
 
 ```kotlin 
-RedisTransport.Builder()
-      .redisURI(RedisURI.create("localhost", RedisURI.DEFAULT_REDIS_PORT))
-      .build()
+RedisTransport.Builder().redisURI(RedisURI.create("localhost", RedisURI.DEFAULT_REDIS_PORT)).build()
 ```                         
 
 <!--- KNIT redis-transport-example-01.kt --> 
@@ -179,9 +216,7 @@ fun main() {
 -->
 
 ```kotlin 
-RSocketTransport.Builder()
-      .queueDestinationResolver { setOf(InetSocketAddress(8787)) }
-      .build()
+RSocketTransport.Builder().queueDestinationResolver { setOf(InetSocketAddress(8787)) }.build()
 ```                         
 
 <!--- KNIT rsocket-transport-example-01.kt --> 

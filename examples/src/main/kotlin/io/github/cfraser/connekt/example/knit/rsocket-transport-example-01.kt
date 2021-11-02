@@ -11,9 +11,7 @@ import java.net.InetSocketAddress
 
 fun main() {
 
-RSocketTransport.Builder()
-      .queueDestinationResolver { setOf(InetSocketAddress(8787)) }
-      .build()
+RSocketTransport.Builder().queueDestinationResolver { setOf(InetSocketAddress(8787)) }.build()
     .use { transport -> 
         example01(transport)
         example02(transport)

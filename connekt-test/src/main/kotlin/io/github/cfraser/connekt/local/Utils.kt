@@ -65,22 +65,20 @@ fun <T> Transport.test(
   use { transport ->
     val numberOfMessages = 1_000
     val sendMessages = (1..numberOfMessages).map { messageSupplier.get() }
-    val numberOfQueues = 5
+    val numberOfQueues = 10
     val receivedMessages = arrayOfNulls<MutableList<T>>(numberOfQueues)
 
     runBlocking {
       val jobs = mutableListOf<Job>()
 
-      repeat(numberOfQueues) { i ->
-        receivedMessages[i] = mutableListOf()
-
-        val queue = "$i"
-        val sendChannel = transport.sendTo(queue, serializer)
-        val receiveChannel: ReceiveChannel<T> = transport.receiveFrom(queue, deserializer)
+      repeat(numberOfQueues) { queue ->
+        receivedMessages[queue] = mutableListOf()
 
         jobs +=
             launch {
-              receivedMessages[i]!!.run {
+              receivedMessages[queue]!!.run {
+                val receiveChannel: ReceiveChannel<T> =
+                    transport.receiveFrom("$queue", deserializer)
                 for (message in receiveChannel) {
                   this += message
                   logger.debug { "Received message $message from queue $queue" }
@@ -93,6 +91,7 @@ fun <T> Transport.test(
 
         jobs +=
             launch {
+              val sendChannel = transport.sendTo("$queue", serializer)
               sendMessages.forEach { message ->
                 sendChannel.send(message)
                 logger.debug { "Sent message $message to queue $queue" }

@@ -16,6 +16,7 @@ limitations under the License.
 package io.github.cfraser.connekt.example;
 
 import io.github.cfraser.connekt.api.Transport;
+import io.github.cfraser.connekt.nats.NatsTransport;
 import io.github.cfraser.connekt.redis.RedisTransport;
 import io.github.cfraser.connekt.rsocket.AsyncQueueDestinationResolver;
 import io.github.cfraser.connekt.rsocket.RSocketTransport;
@@ -28,6 +29,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public final class TransportExamples {
+
+  public static void natsExample() throws IOException, ExecutionException, InterruptedException {
+    useTransport(new NatsTransport.Builder().serverURL("nats://localhost:4222"));
+  }
 
   public static void redisExample() throws IOException, ExecutionException, InterruptedException {
     useTransport(

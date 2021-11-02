@@ -1,15 +1,14 @@
 @file:Suppress("PackageDirectoryMismatch")
 // This file was automatically generated from README.md by Knit tool. Do not edit.
-package io.github.cfraser.connekt.example.knit.redisTransportExample01
+package io.github.cfraser.connekt.example.knit.natsTransportExample01
 
 import io.github.cfraser.connekt.example.knit.transportExample01.example01
 import io.github.cfraser.connekt.example.knit.transportExample02.example02
-import io.github.cfraser.connekt.redis.RedisTransport
-import io.lettuce.core.RedisURI
+import io.github.cfraser.connekt.nats.NatsTransport
 
 fun main() {
 
-RedisTransport.Builder().redisURI(RedisURI.create("localhost", RedisURI.DEFAULT_REDIS_PORT)).build()
+NatsTransport.Builder().serverURL("nats://localhost:4222").build()
     .use { transport -> 
         example01(transport)
         example02(transport)
