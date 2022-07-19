@@ -1,0 +1,10 @@
+bin
+build
+out
+.gradle
+.idea
+*.iml
+.DS_Store
+vendor
+.vscode
+
