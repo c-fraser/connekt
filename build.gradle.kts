@@ -23,6 +23,8 @@ import org.jreleaser.model.Active
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.dokka)
+  alias(libs.plugins.kotest.multiplatform)
   alias(libs.plugins.spotless)
   alias(libs.plugins.detekt)
   alias(libs.plugins.nexus.publish)
@@ -184,7 +186,7 @@ tasks {
   withType<Jar> { manifest { attributes("Automatic-Module-Name" to "io.github.cfraser.graphit") } }
 
   val detekt =
-      getting(Detekt::class) {
+      withType<Detekt> {
         jvmTarget = "${JavaVersion.VERSION_11}"
         buildUponDefaultConfig = true
         config.setFrom(rootDir.resolve("detekt.yml"))

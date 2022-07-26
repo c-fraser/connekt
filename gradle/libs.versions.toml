@@ -9,6 +9,7 @@ kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref 
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "kotlin" }
 kotest-multiplatform = { id = "io.kotest.multiplatform", version.ref = "kotest" }
 spotless = { id = "com.diffplug.spotless", version = "6.7.2" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.21.0" }
