@@ -5,8 +5,11 @@ package io.github.cfraser.graphit
  */
 sealed class GraphException(override val message: String?) : RuntimeException()
 
+/** [VertexAlreadyExists] is thrown when a vertex already exists in the graph. */
+class VertexAlreadyExists(vertex: Any) : GraphException("Vertex $vertex already exists")
+
 /** [VertexNotFound] is thrown when an expected vertex is not found in the graph. */
-class VertexNotFound(value: Any) : GraphException("Vertex $value not found")
+class VertexNotFound(vertex: Any) : GraphException("Vertex $vertex not found")
 
 /** [EdgeAlreadyExists] is thrown when an edge between the vertices already exists in the graph. */
 class EdgeAlreadyExists(source: Any, target: Any) :
@@ -43,3 +46,13 @@ object LabeledException : GraphException("A labeled graph cannot contain an unla
  * edge.
  */
 object UnlabeledException : GraphException("An unlabeled graph cannot contain a labeled edge")
+
+/** [LoopException] is thrown when an edge connects a vertex to itself. */
+object LoopException : GraphException("An edge in cannot connect a vertex to itself")
+
+/**
+ * [AcyclicException] is thrown when a path between the vertices would violate the acyclic
+ * constraint in the graph.
+ */
+class AcyclicException(source: Any, target: Any) :
+    GraphException("A path from $source to $target introduces a cycle in the graph")

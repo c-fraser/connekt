@@ -53,12 +53,9 @@ kotlin {
   macosArm64()
 
   sourceSets {
-    all { languageSettings.optIn("kotlin.RequiresOptIn") }
-
     named("commonTest") {
       dependencies {
         implementation(kotlin("test-common"))
-        implementation(kotlin("test-annotations-common"))
         implementation(libs.kotest.assertions.core)
         implementation(libs.kotest.framework.engine)
       }
@@ -67,8 +64,9 @@ kotlin {
 }
 
 configure<SpotlessExtension> {
+  val ktfmtVersion = "0.39"
   val licenseHeader =
-      """
+    """
       /*
       Copyright 2022 c-fraser
       
@@ -86,8 +84,14 @@ configure<SpotlessExtension> {
       */
       """.trimIndent()
 
+  kotlin {
+    ktfmt(ktfmtVersion)
+    licenseHeader(licenseHeader)
+    toggleOffOn("@formatter:off", "@formatter:on")
+  }
+
   kotlinGradle {
-    ktfmt("0.39")
+    ktfmt(ktfmtVersion)
     licenseHeader(licenseHeader, "(import|plugins|rootProject)")
     target(fileTree(rootProject.rootDir) { include("**/*.gradle.kts") })
   }
@@ -181,7 +185,12 @@ configure<JReleaserExtension> {
 }
 
 tasks {
-  withType<KotlinCompile>().all { kotlinOptions.jvmTarget = "${JavaVersion.VERSION_11}" }
+  withType<KotlinCompile>().all {
+    kotlinOptions {
+      freeCompilerArgs = listOf()
+      jvmTarget = "${JavaVersion.VERSION_11}"
+    }
+  }
 
   withType<Jar> { manifest { attributes("Automatic-Module-Name" to "io.github.cfraser.graphit") } }
 
