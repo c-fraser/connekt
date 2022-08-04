@@ -66,7 +66,7 @@ kotlin {
 configure<SpotlessExtension> {
   val ktfmtVersion = "0.39"
   val licenseHeader =
-    """
+      """
       /*
       Copyright 2022 c-fraser
       

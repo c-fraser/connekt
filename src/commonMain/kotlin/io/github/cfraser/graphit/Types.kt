@@ -1,5 +1,7 @@
 package io.github.cfraser.graphit
 
+import kotlin.reflect.KProperty
+
 /**
  * [Vertices] is a vertex [Pair] which may, or may not, be connected by an [Edge].
  *
@@ -10,9 +12,6 @@ package io.github.cfraser.graphit
  * @param V the type of each vertex in the [Graph]
  */
 typealias Vertices<V> = Pair<V, V>
-
-/** Convert `this` [Edge] to [Vertices]. */
-internal fun <V : Any, E : Edge<V>> E.vertices(): Vertices<V> = source to target
 
 /**
  * [Feature] describes the features supported and enforced by a [Graph]. A [Graph] may have any
@@ -31,10 +30,6 @@ enum class Feature {
   ACYCLIC
 }
 
-/** [isDirected] returns `true` if [Feature.DIRECTED] is in the [Graph.features]. */
-internal val Graph<*, *>.isDirected: Boolean
-  get() = Feature.DIRECTED in features
-
 /** [isAcyclic] returns `true` if [Feature.ACYCLIC] is in the [Graph.features]. */
 internal val Graph<*, *>.isAcyclic: Boolean
   get() = Feature.ACYCLIC in features
@@ -42,26 +37,26 @@ internal val Graph<*, *>.isAcyclic: Boolean
 /**
  * [TraversalStrategy] determines the order in which the vertices in a [Graph] are traversed.
  *
- * The [vertex] is optional. If the provided, the traversal will begin at the [vertex], otherwise
- * the traversal will begin at an arbitrary vertex.
+ * The traversal will begin at the [vertex]. If the graph is directed, all the vertices in the graph
+ * may not be traversed, depending on the edges connected to the [vertex].
  *
  * @param V the type of each vertex in the [Graph]
  * @property vertex the vertex to begin traversing from
  */
-sealed class TraversalStrategy<V : Any>(val vertex: V?)
+sealed class TraversalStrategy<V : Any>(val vertex: V)
 
 /**
  * [DepthFirst] represents a [depth-first search](https://en.wikipedia.org/wiki/Depth-first_search)
  * of the [Graph], beginning at the [vertex].
  */
-class DepthFirst<V : Any>(vertex: V? = null) : TraversalStrategy<V>(vertex)
+class DepthFirst<V : Any>(vertex: V) : TraversalStrategy<V>(vertex)
 
 /**
  * [BreadthFirst] represents a
  * [breadth-first search](https://en.wikipedia.org/wiki/Breadth-first_search) of the [Graph],
  * beginning at the [vertex].
  */
-class BreadthFirst<V : Any>(vertex: V? = null) : TraversalStrategy<V>(vertex)
+class BreadthFirst<V : Any>(vertex: V) : TraversalStrategy<V>(vertex)
 
 /** Initialize and return a [Queue] for traversing a [Graph] in the appropriate order. */
 internal fun <V : Any> TraversalStrategy<V>.queue(): Queue<V> =
@@ -69,3 +64,41 @@ internal fun <V : Any> TraversalStrategy<V>.queue(): Queue<V> =
       is DepthFirst<V> -> LIFOQueue()
       is BreadthFirst<V> -> FIFOQueue()
     }
+
+/**
+ * [VertexSetInitializer] is a functional interface that has the ability to initialize a
+ * [MutableSet] of [V] for storing the vertices in a [Graph].
+ */
+internal fun interface VertexSetInitializer<V : Any> {
+
+  /** [vertexSet] stores the vertices in a [Graph]. */
+  fun vertexSet(): MutableSet<V>
+}
+
+/** [getValue] enables [VertexSetInitializer.vertexSet] to be used as a delegate. */
+internal operator fun <V : Any> VertexSetInitializer<V>.getValue(
+    thisRef: Any?,
+    property: KProperty<*>
+): MutableSet<V> = vertexSet()
+
+/**
+ * [EdgeMapInitializer] is a function interface that has the ability to initialize a [MutableMap]
+ * for storing the mappings of vertices to edges in a [Graph].
+ */
+internal interface EdgeMapInitializer<V : Any, E : Edge<V>> {
+
+  /**
+   * [sourceMap] stores the edges, a [MutableMap] of target vertices [V] to edge [E], for a source
+   * vertex.
+   */
+  fun sourceMap(): MutableMap<V, MutableMap<V, E>>
+
+  /** [targetMap] stores the mapping of vertex [V] to edge [E]. */
+  fun targetMap(): MutableMap<V, E>
+}
+
+/** [getValue] enables [EdgeMapInitializer.sourceMap] to be used as a delegate. */
+internal operator fun <V : Any, E : Edge<V>> EdgeMapInitializer<V, E>.getValue(
+    thisRef: Any?,
+    property: KProperty<*>
+): MutableMap<V, MutableMap<V, E>> = sourceMap()

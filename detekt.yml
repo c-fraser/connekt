@@ -1,0 +1,7 @@
+complexity:
+  TooManyFunctions:
+    thresholdInClasses: 15
+
+style:
+  LoopWithTooManyJumpStatements:
+    maxJumpCount: 5
