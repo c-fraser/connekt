@@ -24,10 +24,8 @@ fun <V : Any, E : Edge<V>> buildGraph(
     @BuilderInference builder: GraphBuilder<V, E>.() -> Unit,
 ): Graph<V, E> {
   contract { callsInPlace(builder, InvocationKind.EXACTLY_ONCE) }
-  return when (Feature.DIRECTED) {
-    in features -> DirectedGraph<V, E>(features).apply(builder)
-    else -> UndirectedGraph<V, E>(features).apply(builder)
-  }
+  return if (Feature.DIRECTED in features) DirectedGraph<V, E>(features).apply(builder)
+  else UndirectedGraph<V, E>(features).apply(builder)
 }
 
 /**

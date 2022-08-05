@@ -266,6 +266,31 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
 }
 
 /**
+ * [UndirectedGraph] is a [GraphBuilder] and [Graph] implementation for an
+ * [undirected graph](https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)#Graph).
+ */
+internal class UndirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature>) :
+    BaseGraph<V, E>(features) {
+
+  private val edges by edgeMapInitializer
+
+  override fun get(vertex: V): Collection<E> =
+      vertex.exists().let { edges[it]?.values }?.toSet().orEmpty()
+
+  override fun getEdge(source: V, target: V): E? =
+      edges[source]?.let { it[target] } ?: edges[target]?.let { it[source] }
+
+  override fun getEdges(vertex: V): MutableMap<V, E>? = edges[vertex]
+
+  override fun addEdge(edge: E) {
+    edges.getOrPut(edge.source, edgeMapInitializer::targetMap)[edge.target] = edge
+    edges.getOrPut(edge.target, edgeMapInitializer::targetMap)[edge.source] = edge
+  }
+
+  override fun V.adjacentVertices(): Collection<V> = edges[this]?.keys.orEmpty()
+}
+
+/**
  * [DirectedGraph] is a [GraphBuilder] and [Graph] implementation for a
  * [directed graph](https://en.wikipedia.org/wiki/Directed_graph).
  */
@@ -298,29 +323,4 @@ internal class DirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature>)
     fun MutableMap<V, MutableMap<V, E>>.vertices() = this[it]?.keys.orEmpty()
     return outEdges.vertices() // + inEdgeMap.vertices()
   }
-}
-
-/**
- * [UndirectedGraph] is a [GraphBuilder] and [Graph] implementation for an
- * [undirected graph](https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)#Graph).
- */
-internal class UndirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature>) :
-    BaseGraph<V, E>(features) {
-
-  private val edges by edgeMapInitializer
-
-  override fun get(vertex: V): Collection<E> =
-      vertex.exists().let { edges[it]?.values }?.toSet().orEmpty()
-
-  override fun getEdge(source: V, target: V): E? =
-      edges[source]?.let { it[target] } ?: edges[target]?.let { it[source] }
-
-  override fun getEdges(vertex: V): MutableMap<V, E>? = edges[vertex]
-
-  override fun addEdge(edge: E) {
-    edges.getOrPut(edge.source, edgeMapInitializer::targetMap)[edge.target] = edge
-    edges.getOrPut(edge.target, edgeMapInitializer::targetMap)[edge.source] = edge
-  }
-
-  override fun V.adjacentVertices(): Collection<V> = edges[this]?.keys.orEmpty()
 }
