@@ -16,6 +16,8 @@ limitations under the License.
 import com.diffplug.gradle.spotless.SpotlessExtension
 import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import io.gitlab.arturbosch.detekt.Detekt
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jreleaser.gradle.plugin.JReleaserExtension
 import org.jreleaser.model.Active
@@ -42,7 +44,7 @@ allprojects {
 }
 
 kotlin {
-  jvm()
+  jvm { compilations.all { kotlinOptions { jvmTarget = "${JavaVersion.VERSION_11}" } } }
   js(IR) {
     nodejs()
     browser()
@@ -50,16 +52,19 @@ kotlin {
   linuxX64()
   mingwX64()
   macosX64()
-  /*macosArm64()*/
+  macosArm64()
 
+  @Suppress("UNUSED_VARIABLE")
   sourceSets {
-    named("commonTest") {
+    val commonTest by getting {
       dependencies {
         implementation(kotlin("test-common"))
         implementation(libs.kotest.assertions.core)
         implementation(libs.kotest.framework.engine)
       }
     }
+
+    val jvmTest by getting { dependencies { implementation(libs.kotest.runner.junit5) } }
   }
 }
 
@@ -87,7 +92,6 @@ configure<SpotlessExtension> {
   kotlin {
     ktfmt(ktfmtVersion)
     licenseHeader(licenseHeader)
-    toggleOffOn("@formatter:off", "@formatter:on")
   }
 
   kotlinGradle {
@@ -185,14 +189,21 @@ configure<JReleaserExtension> {
 }
 
 tasks {
-  withType<KotlinCompile>().all {
-    kotlinOptions {
-      freeCompilerArgs = listOf()
-      jvmTarget = "${JavaVersion.VERSION_11}"
-    }
-  }
+  withType<KotlinCompile>().all { kotlinOptions { freeCompilerArgs = listOf() } }
 
   withType<Jar> { manifest { attributes("Automatic-Module-Name" to "io.github.cfraser.graphit") } }
+
+  @Suppress("UNUSED_VARIABLE")
+  val jvmTest by
+      getting(Test::class) {
+        useJUnitPlatform()
+        testLogging {
+          showExceptions = true
+          showStandardStreams = true
+          events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED)
+          exceptionFormat = TestExceptionFormat.FULL
+        }
+      }
 
   val detekt =
       withType<Detekt> {

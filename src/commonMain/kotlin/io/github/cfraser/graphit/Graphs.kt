@@ -109,10 +109,12 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
 
   final override val features = features.toSet()
 
-  private val vertices by vertexSetInitializer
+  private val vertices = vertexSetInitializer.vertexSet()
 
   final override fun add(edge: E): GraphBuilder<V, E> = apply {
-    vertices += edge
+    if (edge.source == edge.target) throw LoopException
+    vertices += edge.source
+    vertices += edge.target
     getEdge(edge.source, edge.target)?.also { throw EdgeAlreadyExists(it) }
     if (isAcyclic) checkAcyclic(edge)
     addEdge(edge)
@@ -249,20 +251,6 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
     first.exists()
     second.exists()
   }
-
-  protected companion object {
-
-    /**
-     * Add the [Edge.source] and [Edge.target] to `this` vertex addEdge.
-     *
-     * @throws LoopException if [Edge.source] is equal to [Edge.target]
-     */
-    operator fun <V : Any, E : Edge<V>> MutableSet<V>.plusAssign(edge: E) {
-      if (edge.source == edge.target) throw LoopException
-      this += edge.source
-      this += edge.target
-    }
-  }
 }
 
 /**
@@ -272,7 +260,7 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
 internal class UndirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature>) :
     BaseGraph<V, E>(features) {
 
-  private val edges by edgeMapInitializer
+  private val edges = edgeMapInitializer.sourceMap()
 
   override fun get(vertex: V): Collection<E> =
       vertex.exists().let { edges[it]?.values }?.toSet().orEmpty()
@@ -297,8 +285,8 @@ internal class UndirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature
 internal class DirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature>) :
     BaseGraph<V, E>(features) {
 
-  private val outEdges by edgeMapInitializer
-  private val inEdges by edgeMapInitializer
+  private val outEdges = edgeMapInitializer.sourceMap()
+  private val inEdges = edgeMapInitializer.sourceMap()
 
   override fun get(vertex: V): Collection<E> =
       vertex

@@ -1,7 +1,5 @@
 package io.github.cfraser.graphit
 
-import kotlin.reflect.KProperty
-
 /**
  * [Vertices] is a vertex [Pair] which may, or may not, be connected by an [Edge].
  *
@@ -75,12 +73,6 @@ internal fun interface VertexSetInitializer<V : Any> {
   fun vertexSet(): MutableSet<V>
 }
 
-/** [getValue] enables [VertexSetInitializer.vertexSet] to be used as a delegate. */
-internal operator fun <V : Any> VertexSetInitializer<V>.getValue(
-    thisRef: Any?,
-    property: KProperty<*>
-): MutableSet<V> = vertexSet()
-
 /**
  * [EdgeMapInitializer] is a function interface that has the ability to initialize a [MutableMap]
  * for storing the mappings of vertices to edges in a [Graph].
@@ -93,12 +85,6 @@ internal interface EdgeMapInitializer<V : Any, E : Edge<V>> {
    */
   fun sourceMap(): MutableMap<V, MutableMap<V, E>>
 
-  /** [targetMap] stores the mapping of vertex [V] to edge [E]. */
+  /** [targetMap] stores the mapping of target vertex [V] to edge [E]. */
   fun targetMap(): MutableMap<V, E>
 }
-
-/** [getValue] enables [EdgeMapInitializer.sourceMap] to be used as a delegate. */
-internal operator fun <V : Any, E : Edge<V>> EdgeMapInitializer<V, E>.getValue(
-    thisRef: Any?,
-    property: KProperty<*>
-): MutableMap<V, MutableMap<V, E>> = sourceMap()
