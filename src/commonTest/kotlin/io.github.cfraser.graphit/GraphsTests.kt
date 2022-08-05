@@ -53,7 +53,7 @@ class GraphsTests :
 
   private companion object {
 
-    inline fun Graph<String, *>.checkVertices(vertices: Set<String> = setOf("a", "b", "c")) =
-        traverse().toSet() shouldContainExactlyInAnyOrder vertices
+    fun Graph<String, *>.checkVertices(vertices: Set<String> = setOf("a", "b", "c")) =
+        traverse(DepthFirst(vertices.random())).toSet() shouldContainExactlyInAnyOrder vertices
   }
 }

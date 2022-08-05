@@ -50,7 +50,7 @@ kotlin {
   linuxX64()
   mingwX64()
   macosX64()
-  macosArm64()
+  /*macosArm64()*/
 
   sourceSets {
     named("commonTest") {

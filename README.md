@@ -26,5 +26,5 @@
 
 ## Acknowledgements
 
-Kudos to the [graph (Go) package](https://github.com/dominikbraun/graph) which significantly
-influenced the implementation of `graph-it`.
+Kudos to the [graph (Go) package](https://github.com/dominikbraun/graph) which influenced the
+implementation of `graph-it`.
