@@ -44,26 +44,26 @@ allprojects {
 }
 
 kotlin {
-  jvm { compilations.all { kotlinOptions { jvmTarget = "${JavaVersion.VERSION_11}" } } }
-  js(IR) {
-    nodejs()
-    browser()
+  targets {
+    jvm { compilations.all { kotlinOptions { jvmTarget = "${JavaVersion.VERSION_11}" } } }
+    js(LEGACY) {
+      nodejs()
+      browser()
+    }
+    linuxX64()
+    mingwX64()
+    macosX64()
+    macosArm64()
   }
-  linuxX64()
-  mingwX64()
-  macosX64()
-  macosArm64()
 
   @Suppress("UNUSED_VARIABLE")
   sourceSets {
     val commonTest by getting {
       dependencies {
-        implementation(kotlin("test-common"))
         implementation(libs.kotest.assertions.core)
         implementation(libs.kotest.framework.engine)
       }
     }
-
     val jvmTest by getting { dependencies { implementation(libs.kotest.runner.junit5) } }
   }
 }
@@ -193,17 +193,16 @@ tasks {
 
   withType<Jar> { manifest { attributes("Automatic-Module-Name" to "io.github.cfraser.graphit") } }
 
-  @Suppress("UNUSED_VARIABLE")
-  val jvmTest by
-      getting(Test::class) {
-        useJUnitPlatform()
-        testLogging {
-          showExceptions = true
-          showStandardStreams = true
-          events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED)
-          exceptionFormat = TestExceptionFormat.FULL
-        }
-      }
+  withType<Test> {
+    testLogging {
+      showExceptions = true
+      showStandardStreams = true
+      events = setOf(TestLogEvent.FAILED, TestLogEvent.PASSED)
+      exceptionFormat = TestExceptionFormat.FULL
+    }
+  }
+
+  @Suppress("UNUSED_VARIABLE") val jvmTest by getting(Test::class) { useJUnitPlatform() }
 
   val detekt =
       withType<Detekt> {

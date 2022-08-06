@@ -113,10 +113,10 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
 
   final override fun add(edge: E): GraphBuilder<V, E> = apply {
     if (edge.source == edge.target) throw LoopException
+    getEdge(edge.source, edge.target)?.also { throw EdgeAlreadyExists(edge) }
+    if (isAcyclic && isCyclic(edge)) throw AcyclicException(edge)
     vertices += edge.source
     vertices += edge.target
-    getEdge(edge.source, edge.target)?.also { throw EdgeAlreadyExists(it) }
-    if (isAcyclic) checkAcyclic(edge)
     addEdge(edge)
   }
 
@@ -131,7 +131,7 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
 
   final override fun get(vertices: Vertices<V>): E {
     val (source, target) = vertices.exists()
-    return this.getEdge(source, target) ?: throw EdgeNotFound(source, target)
+    return getEdge(source, target) ?: throw EdgeNotFound(source, target)
   }
 
   final override fun traverse(strategy: TraversalStrategy<V>): Iterable<V> {
@@ -171,7 +171,7 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
             checkNotNull(weights[vertex]) +
                 when (edge) {
                   is Weighted -> edge.weight.toFloat()
-                  else -> 1f
+                  else -> 0f
                 }
         if (weight < checkNotNull(weights[successor]) && isFinite) {
           weights[successor] = weight
@@ -182,13 +182,15 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
     }
 
     return buildList {
-      // Backtrack the predecessors from target to source
-      var path = target
-      while (path != source) {
-        this += path
-        path = checkNotNull(predecessors[path])
-      }
-    }
+          // Backtrack the predecessors from target to source
+          var path = target
+          while (path != source) {
+            this += path
+            path = predecessors[path] ?: throw NoPathExists(source, target)
+          }
+          this += source
+        }
+        .reversed()
   }
 
   final override fun toString(): String {
@@ -211,7 +213,12 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
    */
   protected abstract fun getEdges(vertex: V): MutableMap<V, E>?
 
-  /** Add the [edge] between the [Edge.source] and [Edge.target] vertices. */
+  /**
+   * Add the [edge] between the [Edge.source] and [Edge.target] vertices.
+   *
+   * > Implementations of [addEdge] are **only** responsible for the storage of the [edge]. The
+   * validity of the [edge] is checked prior to the invocation of [addEdge].
+   */
   protected abstract fun addEdge(edge: E)
 
   /**
@@ -230,15 +237,29 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
   protected fun V.exists(): V = also { if (it !in vertices) throw VertexNotFound(it) }
 
   /**
-   * Throw an [AcyclicException] if an edge between the [Edge.source] and [Edge.target] vertices
-   * would introduce a cycle.
+   * Check if adding the [edge] would introduce a cycle in the graph.
+   *
+   * If the [Edge.source] and [Edge.target] vertices exist, then [isCyclic] traverses the connected
+   * edges to verify the graph is cyclic or acyclic.
+   *
+   * @return `true` if the graph would be cyclic with the [edge], otherwise `false`
    */
-  private fun checkAcyclic(edge: E) {
-    traverse(DepthFirst(edge.source)).forEach {
-      // If the current vertex, i.e. a predecessor of the source vertex, is also the target vertex,
-      // an edge between these two would create a cycle.
-      if (it == edge.target) throw AcyclicException(edge)
+  private fun isCyclic(edge: E): Boolean {
+    if (edge.source !in this || edge.target !in this) return false
+
+    val vertices = LIFOQueue<V>().apply { offer(edge.source) }
+    val visited = mutableMapOf<V, Boolean>()
+    while (true) {
+      val vertex = vertices.poll() ?: break
+      if (vertex == edge.target) return true
+      visited[vertex] = true
+      this[vertex]
+          .flatMap { listOf(it.source, it.target) }
+          .filter { it !in visited }
+          .forEach(vertices::offer)
     }
+
+    return false
   }
 
   /**

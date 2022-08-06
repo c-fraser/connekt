@@ -1,7 +1,11 @@
 complexity:
+  ComplexMethod:
+    threshold: 20
   TooManyFunctions:
     thresholdInClasses: 15
 
 style:
   LoopWithTooManyJumpStatements:
     maxJumpCount: 5
+  ReturnCount:
+    max: 5

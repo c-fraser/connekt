@@ -66,7 +66,7 @@ internal class PriorityQueue<T : Any> : Queue<PriorityQueue.Item<T>> {
    * The [value] **must** be present in [items], otherwise an [IllegalStateException] is thrown.
    */
   operator fun set(value: T, priority: Float) {
-    val item = checkNotNull(items.find { it == value })
+    val item = checkNotNull(items.find { it.value == value })
     val index = items.indexOf(item)
     items[index] = item.copy(priority = priority)
     items.sortBy { it.priority }

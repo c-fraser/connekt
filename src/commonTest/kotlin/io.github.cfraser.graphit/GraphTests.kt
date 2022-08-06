@@ -11,27 +11,47 @@ import io.kotest.matchers.shouldBe
 
 class GraphTests :
     StringSpec({
-      "verify an undirected graph with basic edges" { abcGraph().checkUndirected().checkAbcGraph() }
+      "verify an undirected graph with basic edges" { graph().check(GraphType.UNDIRECTED) }
       "verify an undirected graph with weighted edges" {
-        weightedAbcGraph().checkUndirected().checkAbcGraph()
+        weightedGraph().check(GraphType.UNDIRECTED)
       }
-      "verify an undirected graph with generic edges" {
-        genericAbcGraph().checkUndirected().checkAbcGraph()
-      }
+      "verify an undirected graph with generic edges" { genericGraph().check(GraphType.UNDIRECTED) }
       "verify an undirected graph with weighted generic edges" {
-        weightedGenericAbcGraph().checkUndirected().checkAbcGraph()
+        weightedGenericGraph().check(GraphType.UNDIRECTED)
       }
       "verify a directed graph with basic edges" {
-        abcGraph(Feature.DIRECTED).checkDirected().checkAbcGraph()
+        graph(Feature.DIRECTED).check(GraphType.DIRECTED)
       }
       "verify a directed graph with weighted edges" {
-        weightedAbcGraph(Feature.DIRECTED).checkDirected().checkAbcGraph()
+        weightedGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
       }
       "verify a directed graph with generic edges" {
-        genericAbcGraph(Feature.DIRECTED).checkDirected().checkAbcGraph()
+        genericGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
       }
       "verify a directed graph with weighted generic edges" {
-        weightedGenericAbcGraph(Feature.DIRECTED).checkDirected().checkAbcGraph()
+        weightedGenericGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
+      }
+      "verify an acyclic graph with basic edges" { graph(Feature.ACYCLIC).check(GraphType.ACYCLIC) }
+      "verify an acyclic graph with weighted edges" {
+        weightedGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
+      }
+      "verify an acyclic graph with generic edges" {
+        genericGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
+      }
+      "verify an acyclic graph with weighted generic edges" {
+        weightedGenericGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
+      }
+      "verify a directed acyclic graph with basic edges" {
+        graph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
+      }
+      "verify a directed acyclic graph with weighted edges" {
+        weightedGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
+      }
+      "verify a directed acyclic graph with generic edges" {
+        genericGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
+      }
+      "verify a directed acyclic graph with weighted generic edges" {
+        weightedGenericGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
       }
     }) {
 
@@ -52,66 +72,85 @@ class GraphTests :
     val UNKNOWN_EDGE_TYPE: Nothing
       get() = fail("An io.github.cfraser.graphit.Edge is required")
 
-    fun abcGraph(vararg features: Feature) =
+    fun graph(vararg features: Feature) =
         buildGraph(*features) {
           this += "a" to "b"
-          this += "a" to "c"
+          checkEdgeAlreadyExists { this += "a" to "c" }
+          checkLoop { this += "a" to "a" }
+          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" }
         }
 
-    fun weightedAbcGraph(vararg features: Feature) =
+    fun weightedGraph(vararg features: Feature) =
         buildGraph(*features) {
           this += "a" to "b" weighs 1
-          this += "a" to "c" weighs 2
+          checkEdgeAlreadyExists { this += "a" to "c" weighs 2 }
+          checkLoop { this += "a" to "a" weighs 0 }
+          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" weighs 0 }
         }
 
-    fun genericAbcGraph(vararg features: Feature) =
+    fun genericGraph(vararg features: Feature) =
         buildGraph(*features) {
           this += "a" to "b" with 1.0
-          this += "a" to "c" with 2.0
+          checkEdgeAlreadyExists { this += "a" to "c" with 2.0 }
+          checkLoop { this += "a" to "a" with 0.0 }
+          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" with 0.0 }
         }
 
-    fun weightedGenericAbcGraph(vararg features: Feature) =
+    fun weightedGenericGraph(vararg features: Feature) =
         buildGraph(*features) {
           this += "a" to "b" weighs 1 with 1.0
-          this += "a" to "c" weighs 2 with 2.0
+          checkEdgeAlreadyExists { this += "a" to "c" weighs 2 with 2.0 }
+          checkLoop { this += "a" to "a" weighs 0 with 0.0 }
+          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" weighs 0 with 0.0 }
         }
 
-    fun <E : Edge<String>> Graph<String, E>.checkUndirected() = apply {
-      features shouldBe emptySet()
+    fun <E : Edge<String>> GraphBuilder<String, E>.checkEdgeAlreadyExists(
+        block: GraphBuilder<String, E>.() -> Unit
+    ) = repeat(2) { if (it == 0) block() else shouldThrow<EdgeAlreadyExists> { block() } }
+
+    fun <E : Edge<String>> GraphBuilder<String, E>.checkLoop(
+        block: GraphBuilder<String, E>.() -> Unit
+    ) = shouldThrow<LoopException> { block() }
+
+    fun <E : Edge<String>> GraphBuilder<String, E>.checkAcyclic(
+        block: GraphBuilder<String, E>.() -> Unit
+    ) = shouldThrow<AcyclicException> { block() }
+
+    enum class GraphType {
+      UNDIRECTED,
+      DIRECTED,
+      ACYCLIC,
+      DIRECTED_ACYCLIC
     }
 
-    fun <E : Edge<String>> Graph<String, E>.checkDirected() = apply {
-      features shouldContainExactly setOf(Feature.DIRECTED)
+    inline fun <reified E : Edge<String>> Graph<String, E>.check(type: GraphType) {
+      when (type) {
+        GraphType.UNDIRECTED -> features shouldBe emptySet()
+        GraphType.DIRECTED -> features shouldContainExactly setOf(Feature.DIRECTED)
+        GraphType.ACYCLIC -> features shouldContainExactly setOf(Feature.ACYCLIC)
+        GraphType.DIRECTED_ACYCLIC ->
+            features shouldContainExactlyInAnyOrder setOf(Feature.DIRECTED, Feature.ACYCLIC)
+      }
+      checkContainsVertex()
+      checkContainsEdge()
+      checkGetEdges()
+      checkGetEdge()
+      checkTraverse()
+      checkShortestPath()
     }
 
-    fun <E : Edge<String>> Graph<String, E>.checkAcyclic() = apply {
-      features shouldContainExactly setOf(Feature.ACYCLIC)
-    }
-
-    fun <E : Edge<String>> Graph<String, E>.checkDirectedAcyclic() = apply {
-      features shouldContainExactlyInAnyOrder setOf(Feature.DIRECTED, Feature.ACYCLIC)
-    }
-
-    inline fun <reified E : Edge<String>> Graph<String, E>.checkAbcGraph() {
-      checkAbcGraphContainsVertex()
-      checkAbcGraphContainsEdge()
-      checkAbcGraphGetEdges()
-      checkAbcGraphGetEdge()
-      checkAbcGraphTraverse()
-    }
-
-    fun Graph<String, *>.checkAbcGraphContainsVertex() {
+    fun Graph<String, *>.checkContainsVertex() {
       VERTICES.all { it in this } shouldBe true
       INVALID_VERTICES.all { it !in this } shouldBe true
     }
 
-    fun Graph<String, *>.checkAbcGraphContainsEdge() {
+    fun Graph<String, *>.checkContainsEdge() {
       EDGES.all { it in this } shouldBe true
       (("b" to "c") !in this) shouldBe true
       shouldThrow<VertexNotFound> { ("x" to "y") in this }
     }
 
-    inline fun <reified E : Edge<String>> Graph<String, E>.checkAbcGraphGetEdges() {
+    inline fun <reified E : Edge<String>> Graph<String, E>.checkGetEdges() {
       this["a"] shouldContainExactlyInAnyOrder
           when (E::class) {
             BasicEdge::class -> setOf(A_B_BASIC_EDGE, A_C_BASIC_EDGE)
@@ -140,7 +179,7 @@ class GraphTests :
       shouldThrow<VertexNotFound> { this["x"] }
     }
 
-    inline fun <reified E : Edge<String>> Graph<String, E>.checkAbcGraphGetEdge() {
+    inline fun <reified E : Edge<String>> Graph<String, E>.checkGetEdge() {
       this["a" to "b"] shouldBe
           when (E::class) {
             BasicEdge::class -> A_B_BASIC_EDGE
@@ -161,9 +200,22 @@ class GraphTests :
       shouldThrow<VertexNotFound> { this["x" to "y"] }
     }
 
-    fun Graph<String, *>.checkAbcGraphTraverse() {
+    fun Graph<String, *>.checkTraverse() {
       traverse(DepthFirst("a")).toSet() shouldContainExactlyInAnyOrder VERTICES
-      if (Feature.DIRECTED in features) {}
+      traverse(BreadthFirst("a")).toSet() shouldContainExactlyInAnyOrder VERTICES
+      if (isDirected) {
+        traverse(DepthFirst("b")) shouldContainExactly listOf("b")
+        traverse(BreadthFirst("c")) shouldContainExactly listOf("c")
+      }
     }
+
+    fun Graph<String, *>.checkShortestPath() {
+      if (isDirected) shortestPath("a" to "b") shouldContainExactly listOf("a", "b")
+      else shortestPath("b" to "c") shouldContainExactly listOf("b", "a", "c")
+      if (isDirected) shouldThrow<NoPathExists> { shortestPath("b" to "c") }
+    }
+
+    val Graph<*, *>.isDirected: Boolean
+      get() = Feature.DIRECTED in features
   }
 }

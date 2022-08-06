@@ -24,8 +24,12 @@ fun <V : Any, E : Edge<V>> buildGraph(
     @BuilderInference builder: GraphBuilder<V, E>.() -> Unit,
 ): Graph<V, E> {
   contract { callsInPlace(builder, InvocationKind.EXACTLY_ONCE) }
-  return if (Feature.DIRECTED in features) DirectedGraph<V, E>(features).apply(builder)
-  else UndirectedGraph<V, E>(features).apply(builder)
+  val graph: BaseGraph<V, E> =
+      when (Feature.DIRECTED) {
+        in features -> DirectedGraph(features)
+        else -> UndirectedGraph(features)
+      }
+  return graph.apply(builder)
 }
 
 /**
@@ -42,6 +46,7 @@ interface GraphBuilder<V : Any, E : Edge<V>> : EdgeDsl<V> {
    * @param edge the [Edge], including the [Edge.source] and [Edge.target] vertices, to add
    * @throws EdgeAlreadyExists if an edge between the [Edge.source] and [Edge.target] already exists
    * @throws LoopException if the [Edge.source] and [Edge.target] are equal
+   * @throws AcyclicException if an edge between the [Edge.source] and [Edge.target] creates a cycle
    * @return `this` graph builder
    */
   fun add(edge: E): GraphBuilder<V, E>
@@ -52,6 +57,7 @@ interface GraphBuilder<V : Any, E : Edge<V>> : EdgeDsl<V> {
    * @param edges the [Iterable] of [Edge] instances to add
    * @throws EdgeAlreadyExists if any of the [edges] already exist
    * @throws LoopException if any of the [Edge.source] and [Edge.target] are equal
+   * @throws AcyclicException if an edge between the [Edge.source] and [Edge.target] creates a cycle
    * @return `this` graph builder
    */
   fun addAll(edges: Iterable<E>): GraphBuilder<V, E> =
