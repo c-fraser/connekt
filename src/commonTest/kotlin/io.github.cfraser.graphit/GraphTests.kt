@@ -137,6 +137,7 @@ class GraphTests :
       checkGetEdge()
       checkTraverse()
       checkShortestPath()
+      checkToString()
     }
 
     fun Graph<String, *>.checkContainsVertex() {
@@ -215,7 +216,21 @@ class GraphTests :
       if (isDirected) shouldThrow<NoPathExists> { shortestPath("b" to "c") }
     }
 
-    val Graph<*, *>.isDirected: Boolean
-      get() = Feature.DIRECTED in features
+    inline fun <reified E : Edge<String>> Graph<String, E>.checkToString() {
+      val statement = { source: String, target: String, i: Int ->
+        "$source ${if (isDirected) "->" else "--"} $target${when (E::class) {
+          BasicEdge::class -> null
+          WeightedEdge::class -> "[weight=$i]"
+          GenericEdge::class -> "[attributes=\"${i.toDouble()}\"]"
+          WeightedGenericEdge::class -> "[weight=$i, attributes=\"${i.toDouble()}\"]"
+          else -> UNKNOWN_EDGE_TYPE
+        }?.let { " $it" }.orEmpty() + ";"}"
+      }
+      "$this" shouldBe
+          """|strict ${if (isDirected) "digraph" else "graph"} {
+          |${statement("a", "b", 1)}
+          |${statement("a", "c", 2)}
+          |}""".trimMargin()
+    }
   }
 }

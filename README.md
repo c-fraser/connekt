@@ -26,5 +26,5 @@ flexible graph data structure.
 
 ## Acknowledgements
 
-Kudos to the [graph (Go) package](https://github.com/dominikbraun/graph) which significantly
+Kudos to the [(Go) graph package](https://github.com/dominikbraun/graph) which significantly
 influenced the implementation of `graph-it`.

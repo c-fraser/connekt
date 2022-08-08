@@ -81,9 +81,20 @@ interface Graph<V : Any, E : Edge<V>> {
   fun shortestPath(vertices: Vertices<V>): Collection<V>
 
   /**
-   * Returns a diagram of the graph.
+   * Returns the [DOT language](https://graphviz.org/doc/info/lang.html) representation of the
+   * graph.
    *
-   * @return the graph diagram
+   * The returned data enables a visualization of the graph to be generated via
+   * [Graphviz](https://graphviz.org/), as shown below.
+   *
+   * ```bash
+   * # paste output of `Graph.toString` to file
+   * cat > ./graph.gv
+   * # generate an SVG from the graph file
+   * dot -Tsvg -O graph.gv
+   * ```
+   *
+   * @return the graph data
    */
   override fun toString(): String
 }
@@ -167,12 +178,7 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
       val edges = getEdges(vertex) ?: continue
       val isFinite = checkNotNull(weights[vertex]).isFinite()
       for ((successor, edge) in edges) {
-        val weight =
-            checkNotNull(weights[vertex]) +
-                when (edge) {
-                  is Weighted -> edge.weight.toFloat()
-                  else -> 0f
-                }
+        val weight = checkNotNull(weights[vertex]) + (edge.weight()?.toFloat() ?: 0f)
         if (weight < checkNotNull(weights[successor]) && isFinite) {
           weights[successor] = weight
           queue[successor] = weight
@@ -194,7 +200,29 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
   }
 
   final override fun toString(): String {
-    return super.toString()
+    val (graphType, edgeOperator) = if (isDirected) "digraph" to "->" else "graph" to "--"
+    data class Statement(val source: V, val target: V, val weight: Int?, val attributes: Any?)
+    val statements =
+        vertices
+            .flatMap { source ->
+              getEdges(source).orEmpty().map { (target, edge) ->
+                Statement(source, target, edge.weight(), edge.attributes())
+              }
+            }
+            .distinctBy { it.source.hashCode() and it.target.hashCode() }
+            .map { (source, target, weight, attributes) ->
+              "$source $edgeOperator $target${when {
+                weight != null && attributes != null -> "[weight=$weight, attributes=\"$attributes\"]"
+                weight != null -> "[weight=$weight]"
+                attributes != null -> "[attributes=\"$attributes\"]"
+                else -> null
+              }?.let { " $it" }.orEmpty()};"
+            }
+    return StringBuilder()
+        .appendLine("strict $graphType {")
+        .run { statements.fold(this) { builder, statement -> builder.appendLine(statement) } }
+        .append("}")
+        .toString()
   }
 
   /**

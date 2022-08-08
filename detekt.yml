@@ -5,6 +5,8 @@ complexity:
     thresholdInClasses: 15
 
 style:
+  DestructuringDeclarationWithTooManyEntries:
+    maxDestructuringEntries: 5
   LoopWithTooManyJumpStatements:
     maxJumpCount: 5
   ReturnCount:

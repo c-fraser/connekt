@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jreleaser.gradle.plugin.JReleaserExtension
 import org.jreleaser.model.Active
 
+buildscript { dependencies { classpath(libs.knit) } }
+
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
@@ -36,6 +38,8 @@ plugins {
   signing
 }
 
+apply(plugin = "kotlinx-knit")
+
 allprojects {
   group = "io.github.c-fraser"
   version = "0.0.0"
@@ -44,17 +48,15 @@ allprojects {
 }
 
 kotlin {
-  targets {
-    jvm { compilations.all { kotlinOptions { jvmTarget = "${JavaVersion.VERSION_11}" } } }
-    js(LEGACY) {
-      nodejs()
-      browser()
-    }
-    linuxX64()
-    mingwX64()
-    macosX64()
-    macosArm64()
+  jvm { compilations.all { kotlinOptions { jvmTarget = "${JavaVersion.VERSION_11}" } } }
+  js(LEGACY) {
+    nodejs()
+    browser()
   }
+  linuxX64()
+  mingwX64()
+  macosX64()
+  macosArm64()
 
   @Suppress("UNUSED_VARIABLE")
   sourceSets {

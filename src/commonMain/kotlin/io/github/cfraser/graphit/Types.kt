@@ -28,6 +28,10 @@ enum class Feature {
   ACYCLIC
 }
 
+/** [isDirected] returns `true` if [Feature.DIRECTED] is in the [Graph.features]. */
+internal val Graph<*, *>.isDirected: Boolean
+  get() = Feature.DIRECTED in features
+
 /** [isAcyclic] returns `true` if [Feature.ACYCLIC] is in the [Graph.features]. */
 internal val Graph<*, *>.isAcyclic: Boolean
   get() = Feature.ACYCLIC in features

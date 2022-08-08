@@ -24,6 +24,13 @@ sealed interface Weighted {
   val weight: Int
 }
 
+/** [Generic] specifies that the edges in a [Graph] contain arbitrary [attributes]. */
+sealed interface Generic<T : Any> {
+
+  /** The [attributes] of the edge. */
+  val attributes: T
+}
+
 /**
  * [BasicEdge] is an [Edge] implementation that only stores the [source] and [target] vertices.
  *
@@ -64,8 +71,8 @@ data class WeightedEdge<V : Any>(
 data class GenericEdge<V : Any, T : Any>(
     override val source: V,
     override val target: V,
-    val attributes: T
-) : Edge<V> {
+    override val attributes: T
+) : Edge<V>, Generic<T> {
 
   override fun toString() = "$source -($attributes)-> $target"
 }
@@ -84,8 +91,8 @@ data class WeightedGenericEdge<V : Any, T : Any>(
     override val source: V,
     override val target: V,
     override val weight: Int,
-    val attributes: T
-) : Edge<V>, Weighted {
+    override val attributes: T
+) : Edge<V>, Weighted, Generic<T> {
 
   override fun toString() = "$source -[$weight]-($attributes)-> $target"
 }
@@ -136,3 +143,23 @@ interface EdgeDsl<V : Any> {
   infix fun <T : Any> WeightedEdge<V>.with(attributes: T): WeightedGenericEdge<V, T> =
       WeightedGenericEdge(source, target, weight, attributes)
 }
+
+/**
+ * Return the [Weighted.weight] of `this` [Edge]. If `this` [Edge] is not [Weighted] then `null` is
+ * returned.
+ */
+internal fun Edge<*>.weight(): Int? =
+    when (this) {
+      is Weighted -> weight
+      else -> null
+    }
+
+/**
+ * Return the [Generic.attributes] of `this` [Edge]. If `this` [Edge] is not [Generic] then `null`
+ * is returned.
+ */
+internal fun Edge<*>.attributes(): Any? =
+    when (this) {
+      is Generic<*> -> attributes
+      else -> null
+    }
