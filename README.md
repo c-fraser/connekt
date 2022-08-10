@@ -19,9 +19,9 @@ flexible graph data structure.
   * [Create a directed acyclic graph of integers](#create-a-directed-acyclic-graph-of-integers)
   * [Create a weighted graph](#create-a-weighted-graph)
   * [Create a graph with generic edge attributes](#create-a-graph-with-generic-edge-attributes)
-  * [Traverse a graph ([depth-first search](https://en.wikipedia.org/wiki/Depth-first_search))](#traverse-a-graph-depth-first-searchhttps:enwikipediaorgwikidepth-first_search)
+  * [Traverse a graph (depth-first search)](#traverse-a-graph-depth-first-search)
   * [Find the shortest path between vertices](#find-the-shortest-path-between-vertices)
-  * [Visualize a graph with [Graphviz](https://graphviz.org/)](#visualize-a-graph-with-graphvizhttps:graphvizorg)
+  * [Visualize a graph with Graphviz](#visualize-a-graph-with-graphviz)
 * [License](#license)
 * [Acknowledgements](#acknowledgements)
 
@@ -247,7 +247,7 @@ strict graph {
 ' | dot -Tsvg > docs/example-04.svg
 -->
 
-### Traverse a graph ([depth-first search](https://en.wikipedia.org/wiki/Depth-first_search))
+### Traverse a graph (depth-first search)
 
 ![traverse graph](docs/example-05.svg)
 
@@ -348,7 +348,7 @@ B -- G [weight=2, label=2];
 ' | dot -Tsvg > docs/example-06.svg
 -->
 
-### Visualize a graph with [Graphviz](https://graphviz.org/)
+### Visualize a graph with Graphviz
 
 `Graph.toString()` returns the [DOT language](https://graphviz.org/doc/info/lang.html)
 representation of the graph instance.
