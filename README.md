@@ -15,8 +15,8 @@ flexible graph data structure.
 * [Features](#features)
 * [Usage](#usage)
 * [Examples](#examples)
-  * [Create an undirected graph of integers](#create-an-undirected-graph-of-integers)
-  * [Create a directed acyclic graph of integers](#create-a-directed-acyclic-graph-of-integers)
+  * [Create an undirected graph](#create-an-undirected-graph)
+  * [Create a directed acyclic graph](#create-a-directed-acyclic-graph)
   * [Create a weighted graph](#create-a-weighted-graph)
   * [Create a graph with generic edge attributes](#create-a-graph-with-generic-edge-attributes)
   * [Traverse a graph (depth-first search)](#traverse-a-graph-depth-first-search)
@@ -46,9 +46,9 @@ via [Maven Central](https://search.maven.org/search?q=g:io.github.c-fraser%20AND
 
 ## Examples
 
-### Create an undirected graph of integers
+### Create an undirected graph
 
-![undirected graph of integers](docs/example-01.svg)
+![example-01](docs/example-01.svg)
 
 <!--- TEST_NAME Example01Test --> 
 
@@ -98,9 +98,9 @@ strict graph {
 ' | dot -Tsvg > docs/example-01.svg
 -->
 
-### Create a directed acyclic graph of integers
+### Create a directed acyclic graph
 
-![undirected graph of integers](docs/example-02.svg)
+![example-02](docs/example-02.svg)
 
 <!--- TEST_NAME Example02Test --> 
 
@@ -151,7 +151,7 @@ strict digraph {
 
 ### Create a weighted graph
 
-![weighted graph](docs/example-03.svg)
+![example-03](docs/example-03.svg)
 
 <!--- TEST_NAME Example03Test --> 
 
@@ -203,7 +203,7 @@ C -- D [weight=4, label=4];
 
 ### Create a graph with generic edge attributes
 
-![weighted graph](docs/example-04.svg)
+![example-04](docs/example-04.svg)
 
 <!--- TEST_NAME Example04Test --> 
 
@@ -249,7 +249,7 @@ strict graph {
 
 ### Traverse a graph (depth-first search)
 
-![traverse graph](docs/example-05.svg)
+![example-05](docs/example-05.svg)
 
 <!--- TEST_NAME Example05Test --> 
 
@@ -292,7 +292,7 @@ strict digraph {
 
 ### Find the shortest path between vertices
 
-![shortest oath](docs/example-06.svg)
+![example-06](docs/example-06.svg)
 
 <!--- TEST_NAME Example06Test --> 
 
