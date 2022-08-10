@@ -1,7 +1,7 @@
 # graph-it
 
 [![Test](https://github.com/c-fraser/graph-it/workflows/Test/badge.svg)](https://github.com/c-fraser/graph-it/actions)
-[![Release](https://img.shields.io/github/v/Release/c-fraser/graph-it?logo=github&sort=semver)](https://github.com/c-fraser/graph-it/releases)
+[![Release](https://img.shields.io/github/v/release/c-fraser/graph-it?logo=github&sort=semver)](https://github.com/c-fraser/graph-it/releases)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.c-fraser/graph-it.svg)](https://search.maven.org/search?q=g:io.github.c-fraser%20AND%20a:graph-it*)
 [![Apache License 2.0](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
