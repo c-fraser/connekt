@@ -1,3 +1,18 @@
+/*
+Copyright 2022 c-fraser
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package io.github.cfraser.graphit
 
 import kotlin.contracts.ExperimentalContracts
@@ -24,16 +39,14 @@ fun <V : Any, E : Edge<V>> buildGraph(
     @BuilderInference builder: GraphBuilder<V, E>.() -> Unit,
 ): Graph<V, E> {
   contract { callsInPlace(builder, InvocationKind.EXACTLY_ONCE) }
-  val graph: BaseGraph<V, E> =
-      when (Feature.DIRECTED) {
-        in features -> DirectedGraph(features)
-        else -> UndirectedGraph(features)
-      }
-  return graph.apply(builder)
+  return InMemoryGraph<V, E>(features.toSet()).apply(builder)
 }
 
 /**
  * [GraphBuilder] enables the addition of vertices and edges to a [Graph].
+ *
+ * > Currently, a [Graph] cannot be a [Multigraph](https://en.wikipedia.org/wiki/Multigraph),
+ * therefore any attempt to [add] a parallel edge will result in a [EdgeAlreadyExists] exception.
  *
  * @param V the type of each vertex
  * @param E the type of each edge
@@ -51,6 +64,11 @@ interface GraphBuilder<V : Any, E : Edge<V>> : EdgeDsl<V> {
    */
   fun add(edge: E): GraphBuilder<V, E>
 
+  /** [plusAssign] is an operator alias for [GraphBuilder.add]. */
+  operator fun <V : Any, E : Edge<V>> GraphBuilder<V, E>.plusAssign(edge: E) {
+    add(edge)
+  }
+
   /**
    * Add the vertices and the [edges] to the graph.
    *
@@ -62,14 +80,9 @@ interface GraphBuilder<V : Any, E : Edge<V>> : EdgeDsl<V> {
    */
   fun addAll(edges: Iterable<E>): GraphBuilder<V, E> =
       edges.fold(this) { builder, edge -> builder.add(edge) }
-}
 
-/** [plusAssign] is an operator alias for [GraphBuilder.add]. */
-operator fun <V : Any, E : Edge<V>> GraphBuilder<V, E>.plusAssign(edge: E) {
-  add(edge)
-}
-
-/** [plusAssign] is an operator alias for [GraphBuilder.addAll]. */
-operator fun <V : Any, E : Edge<V>> GraphBuilder<V, E>.plusAssign(edges: Iterable<E>) {
-  addAll(edges)
+  /** [plusAssign] is an operator alias for [GraphBuilder.addAll]. */
+  operator fun <V : Any, E : Edge<V>> GraphBuilder<V, E>.plusAssign(edges: Iterable<E>) {
+    addAll(edges)
+  }
 }

@@ -1,7 +1,29 @@
+/*
+Copyright 2022 c-fraser
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package io.github.cfraser.graphit
 
 /**
  * [Graph] is a generic immutable graph data structure consisting of vertices and edges.
+ *
+ * A [Graph] can be [directed](https://en.wikipedia.org/wiki/Directed_graph) and/or
+ * [acyclic](https://en.wikipedia.org/wiki/Acyclic_graph), as specified by its [features].
+ *
+ * A [Graph] may contain [isolated subgraphs](https://en.wikipedia.org/wiki/Component_(graph_theory)
+ * ). Consequently, [traverse] may not return all the vertices in the [Graph], depending on the
+ * [TraversalStrategy.vertex].
  *
  * @param V the type of each vertex
  * @param E the type of each edge
@@ -57,8 +79,8 @@ interface Graph<V : Any, E : Edge<V>> {
    * The returned [Iterable] is ordered according to the [strategy].
    *
    * @param strategy the [TraversalStrategy] which specifies how to traverse the graph
-   * @return an [Iterable] which traverses the graph
    * @throws VertexNotFound if the [TraversalStrategy.vertex] isn't found in the graph
+   * @return an [Iterable] which traverses the graph
    */
   fun traverse(strategy: TraversalStrategy<V>): Iterable<V>
 
@@ -88,10 +110,8 @@ interface Graph<V : Any, E : Edge<V>> {
    * [Graphviz](https://graphviz.org/), as shown below.
    *
    * ```bash
-   * # paste output of `Graph.toString` to file
-   * cat > ./graph.gv
-   * # generate an SVG from the graph file
-   * dot -Tsvg -O graph.gv
+   * # generate an SVG from the output of `Graph.toString()`
+   * echo "$GRAPH_DOT" | dot -Tsvg > graph.svg
    * ```
    *
    * @return the graph data
@@ -100,52 +120,60 @@ interface Graph<V : Any, E : Edge<V>> {
 }
 
 /**
- * [BaseGraph] is an abstract class that consolidates common functionality for [Graph]
- * implementations.
- *
- * The usage of [VertexSetInitializer] and [EdgeMapInitializer] flexibility regarding the storage of
- * vertices and edges in the graph. By default, the vertices and edges are stored in-memory, but
- * external/distributed is possible by providing a customized [VertexSetInitializer] and/or
- * [EdgeMapInitializer].
+ * [InMemoryGraph] is a [Graph] and [GraphBuilder] implementation which stores the [vertices] and
+ * edges within in-memory data structures.
  */
-internal abstract class BaseGraph<V : Any, E : Edge<V>>(
-    features: Array<out Feature>,
-    vertexSetInitializer: VertexSetInitializer<V> = VertexSetInitializer(::HashSet),
-    protected val edgeMapInitializer: EdgeMapInitializer<V, E> =
-        object : EdgeMapInitializer<V, E> {
-          override fun sourceMap(): MutableMap<V, MutableMap<V, E>> = HashMap()
-          override fun targetMap(): MutableMap<V, E> = HashMap()
-        }
-) : GraphBuilder<V, E>, Graph<V, E> {
+internal class InMemoryGraph<V : Any, E : Edge<V>>(override val features: Set<Feature>) :
+    GraphBuilder<V, E>, Graph<V, E> {
 
-  final override val features = features.toSet()
+  private val vertices: MutableSet<V> = mutableSetOf()
+  private val outEdges: MutableMap<V, MutableMap<V, E>> = mutableMapOf()
+  private val inEdges: MutableMap<V, MutableMap<V, E>> = mutableMapOf()
 
-  private val vertices = vertexSetInitializer.vertexSet()
-
-  final override fun add(edge: E): GraphBuilder<V, E> = apply {
+  override fun add(edge: E): GraphBuilder<V, E> = apply {
     if (edge.source == edge.target) throw LoopException
-    getEdge(edge.source, edge.target)?.also { throw EdgeAlreadyExists(edge) }
+    edge(edge.source, edge.target)?.also { throw EdgeAlreadyExists(edge) }
     if (isAcyclic && isCyclic(edge)) throw AcyclicException(edge)
+
     vertices += edge.source
     vertices += edge.target
-    addEdge(edge)
+
+    fun MutableMap<V, MutableMap<V, E>>.put(source: V, target: V, edge: E) {
+      getOrPut(source) { mutableMapOf() }[target] = edge
+    }
+
+    outEdges.put(edge.source, edge.target, edge)
+    inEdges.put(edge.target, edge.source, edge)
+    if (isUndirected) {
+      outEdges.put(edge.target, edge.source, edge)
+      inEdges.put(edge.source, edge.target, edge)
+    }
   }
 
-  final override fun contains(vertex: V): Boolean = vertex in vertices
+  override fun contains(vertex: V): Boolean = vertex in vertices
 
-  final override fun contains(vertices: Vertices<V>): Boolean =
+  override fun contains(vertices: Vertices<V>): Boolean =
       try {
         this[vertices].let { true }
       } catch (_: EdgeNotFound) {
         false
       }
 
-  final override fun get(vertices: Vertices<V>): E {
+  override fun get(vertex: V): Collection<E> =
+      vertex
+          .exists()
+          .let {
+            fun MutableMap<V, MutableMap<V, E>>.edges() = this[it]?.values.orEmpty()
+            outEdges.edges() + inEdges.edges()
+          }
+          .toSet()
+
+  override fun get(vertices: Vertices<V>): E {
     val (source, target) = vertices.exists()
-    return getEdge(source, target) ?: throw EdgeNotFound(source, target)
+    return edge(source, target) ?: throw EdgeNotFound(source, target)
   }
 
-  final override fun traverse(strategy: TraversalStrategy<V>): Iterable<V> {
+  override fun traverse(strategy: TraversalStrategy<V>): Iterable<V> {
     val vertices = strategy.queue()
     val visited = mutableMapOf<V, Boolean>()
 
@@ -161,7 +189,7 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
     }
   }
 
-  final override fun shortestPath(vertices: Vertices<V>): Collection<V> {
+  override fun shortestPath(vertices: Vertices<V>): Collection<V> {
     val (source, target) = vertices.exists()
 
     val weights = mutableMapOf<V, Float>()
@@ -175,7 +203,7 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
     val predecessors = mutableMapOf<V, V>()
     while (true) {
       val vertex = queue.poll()?.value ?: break
-      val edges = getEdges(vertex) ?: continue
+      val edges = edges(vertex) ?: continue
       val isFinite = checkNotNull(weights[vertex]).isFinite()
       for ((successor, edge) in edges) {
         val weight = checkNotNull(weights[vertex]) + (edge.weight()?.toFloat() ?: 0f)
@@ -199,22 +227,23 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
         .reversed()
   }
 
-  final override fun toString(): String {
+  override fun toString(): String {
     val (graphType, edgeOperator) = if (isDirected) "digraph" to "->" else "graph" to "--"
     data class Statement(val source: V, val target: V, val weight: Int?, val attributes: Any?)
     val statements =
         vertices
             .flatMap { source ->
-              getEdges(source).orEmpty().map { (target, edge) ->
+              edges(source).orEmpty().map { (target, edge) ->
                 Statement(source, target, edge.weight(), edge.attributes())
               }
             }
-            .distinctBy { it.source.hashCode() and it.target.hashCode() }
+            .distinctBy { setOf(it.source, it.target) }
             .map { (source, target, weight, attributes) ->
               "$source $edgeOperator $target${when {
-                weight != null && attributes != null -> "[weight=$weight, attributes=\"$attributes\"]"
-                weight != null -> "[weight=$weight]"
-                attributes != null -> "[attributes=\"$attributes\"]"
+                weight != null && attributes != null -> 
+                  "[weight=$weight, label=\"weight: $weight, attributes: $attributes\"]"
+                weight != null -> "[weight=$weight, label=$weight]"
+                attributes != null -> "[label=\"$attributes\"]"
                 else -> null
               }?.let { " $it" }.orEmpty()};"
             }
@@ -228,41 +257,37 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
   /**
    * Get the edge between the [source] and [target] vertices, if it exists.
    *
-   * > Implementations of [getEdge] **shouldn't** verify the existence of [source] and [target].
+   * > [edge] **doesn't** verify the existence of [source] and [target].
    */
-  protected abstract fun getEdge(source: V, target: V): E?
+  private fun edge(source: V, target: V): E? =
+      outEdges[source]?.let { it[target] }
+          ?: inEdges[target]?.let { it[source] }
+              ?: takeIf { isUndirected }
+              ?.run { outEdges[target]?.let { it[source] } ?: inEdges[source]?.let { it[target] } }
 
   /**
    * Get the edges connected to the [vertex].
    *
-   * > Implementations of [getEdges] **shouldn't** verify the existence of [vertex].
+   * > [edges] **doesn't** verify the existence of [vertex].
    *
-   * The returned [MutableMap] maps the connecting edge to the target vertex.
+   * The returned [MutableMap] maps the target vertex to the connecting edge.
    */
-  protected abstract fun getEdges(vertex: V): MutableMap<V, E>?
-
-  /**
-   * Add the [edge] between the [Edge.source] and [Edge.target] vertices.
-   *
-   * > Implementations of [addEdge] are **only** responsible for the storage of the [edge]. The
-   * validity of the [edge] is checked prior to the invocation of [addEdge].
-   */
-  protected abstract fun addEdge(edge: E)
+  private fun edges(vertex: V): MutableMap<V, E>? =
+      if (isDirected) outEdges[vertex]
+      else
+          (outEdges[vertex].orEmpty() + inEdges[vertex].orEmpty())
+              .takeUnless { it.isEmpty() }
+              ?.toMutableMap()
 
   /**
    * Get the vertices adjacent to [V].
    *
-   * > Implementations of [adjacentVertices] **shouldn't** verify the existence of [V].
+   * > [adjacentVertices] **doesn't** verify the existence of [V].
    */
-  protected abstract fun V.adjacentVertices(): Collection<V>
-
-  /**
-   * Check that `this` vertex exist.
-   *
-   * @throws VertexNotFound if the vertex is not found
-   * @return `this` vertex
-   */
-  protected fun V.exists(): V = also { if (it !in vertices) throw VertexNotFound(it) }
+  private fun V.adjacentVertices(): Collection<V> = let {
+    fun MutableMap<V, MutableMap<V, E>>.vertices() = this[it]?.keys.orEmpty()
+    return outEdges.vertices() + takeIf { isUndirected }?.run { inEdges.vertices() }.orEmpty()
+  }
 
   /**
    * Check if adding the [edge] would introduce a cycle in the graph.
@@ -273,22 +298,27 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
    * @return `true` if the graph would be cyclic with the [edge], otherwise `false`
    */
   private fun isCyclic(edge: E): Boolean {
-    if (edge.source !in this || edge.target !in this) return false
-
-    val vertices = LIFOQueue<V>().apply { offer(edge.source) }
-    val visited = mutableMapOf<V, Boolean>()
-    while (true) {
-      val vertex = vertices.poll() ?: break
-      if (vertex == edge.target) return true
-      visited[vertex] = true
-      this[vertex]
-          .flatMap { listOf(it.source, it.target) }
-          .filter { it !in visited }
-          .forEach(vertices::offer)
+    if (edge.source in this && edge.target in this) {
+      val vertices = LIFOQueue<V>().apply { offer(edge.source) }
+      val visited = mutableMapOf<V, Boolean>()
+      while (true) {
+        val vertex = vertices.poll() ?: break
+        if (vertex == edge.target) return true
+        visited[vertex] = true
+        inEdges[vertex]?.keys?.filter { it !in visited }?.forEach(vertices::offer)
+      }
     }
 
     return false
   }
+
+  /**
+   * Check that `this` vertex exist.
+   *
+   * @throws VertexNotFound if the vertex is not found
+   * @return `this` vertex
+   */
+  private fun V.exists(): V = also { if (it !in vertices) throw VertexNotFound(it) }
 
   /**
    * Check that the source and target [Vertices] exist.
@@ -299,65 +329,5 @@ internal abstract class BaseGraph<V : Any, E : Edge<V>>(
   private fun Vertices<V>.exists(): Vertices<V> = apply {
     first.exists()
     second.exists()
-  }
-}
-
-/**
- * [UndirectedGraph] is a [GraphBuilder] and [Graph] implementation for an
- * [undirected graph](https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)#Graph).
- */
-internal class UndirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature>) :
-    BaseGraph<V, E>(features) {
-
-  private val edges = edgeMapInitializer.sourceMap()
-
-  override fun get(vertex: V): Collection<E> =
-      vertex.exists().let { edges[it]?.values }?.toSet().orEmpty()
-
-  override fun getEdge(source: V, target: V): E? =
-      edges[source]?.let { it[target] } ?: edges[target]?.let { it[source] }
-
-  override fun getEdges(vertex: V): MutableMap<V, E>? = edges[vertex]
-
-  override fun addEdge(edge: E) {
-    edges.getOrPut(edge.source, edgeMapInitializer::targetMap)[edge.target] = edge
-    edges.getOrPut(edge.target, edgeMapInitializer::targetMap)[edge.source] = edge
-  }
-
-  override fun V.adjacentVertices(): Collection<V> = edges[this]?.keys.orEmpty()
-}
-
-/**
- * [DirectedGraph] is a [GraphBuilder] and [Graph] implementation for a
- * [directed graph](https://en.wikipedia.org/wiki/Directed_graph).
- */
-internal class DirectedGraph<V : Any, E : Edge<V>>(features: Array<out Feature>) :
-    BaseGraph<V, E>(features) {
-
-  private val outEdges = edgeMapInitializer.sourceMap()
-  private val inEdges = edgeMapInitializer.sourceMap()
-
-  override fun get(vertex: V): Collection<E> =
-      vertex
-          .exists()
-          .let {
-            fun MutableMap<V, MutableMap<V, E>>.edges() = this[it]?.values.orEmpty()
-            outEdges.edges() + inEdges.edges()
-          }
-          .toSet()
-
-  override fun getEdge(source: V, target: V): E? =
-      outEdges[source]?.let { it[target] } ?: inEdges[target]?.let { it[source] }
-
-  override fun getEdges(vertex: V): MutableMap<V, E>? = outEdges[vertex]
-
-  override fun addEdge(edge: E) {
-    outEdges.getOrPut(edge.source, edgeMapInitializer::targetMap)[edge.target] = edge
-    inEdges.getOrPut(edge.target, edgeMapInitializer::targetMap)[edge.source] = edge
-  }
-
-  override fun V.adjacentVertices(): Collection<V> = let {
-    fun MutableMap<V, MutableMap<V, E>>.vertices() = this[it]?.keys.orEmpty()
-    return outEdges.vertices() // + inEdgeMap.vertices()
   }
 }

@@ -1,5 +1,18 @@
-@file:Suppress("unused")
+/*
+Copyright 2022 c-fraser
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 package io.github.cfraser.graphit
 
 import io.kotest.assertions.fail
@@ -53,6 +66,25 @@ class GraphTests :
       "verify a directed acyclic graph with weighted generic edges" {
         weightedGenericGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
       }
+      "verify cycle check for a directed acyclic graph" {
+        buildGraph(Feature.DIRECTED, Feature.ACYCLIC) {
+          this += "a" to "b"
+          this += "b" to "c"
+          shouldThrow<AcyclicException> {
+            this += "c" to "a"
+            fail("Expected acyclic exception")
+          }
+        }
+      }
+      "TEST" {
+        println(
+            buildGraph {
+              this += 1 to 2 with "A"
+              this += 2 to 3 with "B"
+              this += 1 to 4 with "C"
+              this += 4 to 5 with "D"
+            })
+      }
     }) {
 
   private companion object {
@@ -70,14 +102,15 @@ class GraphTests :
     val A_C_WEIGHTED_GENERIC_EDGE = WeightedGenericEdge("a", "c", 2, 2.0)
 
     val UNKNOWN_EDGE_TYPE: Nothing
-      get() = fail("An io.github.cfraser.graphit.Edge is required")
+      get() = fail("Unknown edge type")
 
     fun graph(vararg features: Feature) =
         buildGraph(*features) {
           this += "a" to "b"
           checkEdgeAlreadyExists { this += "a" to "c" }
           checkLoop { this += "a" to "a" }
-          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" }
+          if (Feature.ACYCLIC in features && Feature.DIRECTED !in features)
+              checkAcyclic { this += "b" to "c" }
         }
 
     fun weightedGraph(vararg features: Feature) =
@@ -85,7 +118,8 @@ class GraphTests :
           this += "a" to "b" weighs 1
           checkEdgeAlreadyExists { this += "a" to "c" weighs 2 }
           checkLoop { this += "a" to "a" weighs 0 }
-          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" weighs 0 }
+          if (Feature.ACYCLIC in features && Feature.DIRECTED !in features)
+              checkAcyclic { this += "b" to "c" weighs 0 }
         }
 
     fun genericGraph(vararg features: Feature) =
@@ -93,7 +127,8 @@ class GraphTests :
           this += "a" to "b" with 1.0
           checkEdgeAlreadyExists { this += "a" to "c" with 2.0 }
           checkLoop { this += "a" to "a" with 0.0 }
-          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" with 0.0 }
+          if (Feature.ACYCLIC in features && Feature.DIRECTED !in features)
+              checkAcyclic { this += "b" to "c" with 0.0 }
         }
 
     fun weightedGenericGraph(vararg features: Feature) =
@@ -101,7 +136,8 @@ class GraphTests :
           this += "a" to "b" weighs 1 with 1.0
           checkEdgeAlreadyExists { this += "a" to "c" weighs 2 with 2.0 }
           checkLoop { this += "a" to "a" weighs 0 with 0.0 }
-          if (Feature.ACYCLIC in features) checkAcyclic { this += "b" to "c" weighs 0 with 0.0 }
+          if (Feature.ACYCLIC in features && Feature.DIRECTED !in features)
+              checkAcyclic { this += "b" to "c" weighs 0 with 0.0 }
         }
 
     fun <E : Edge<String>> GraphBuilder<String, E>.checkEdgeAlreadyExists(
@@ -125,11 +161,26 @@ class GraphTests :
 
     inline fun <reified E : Edge<String>> Graph<String, E>.check(type: GraphType) {
       when (type) {
-        GraphType.UNDIRECTED -> features shouldBe emptySet()
-        GraphType.DIRECTED -> features shouldContainExactly setOf(Feature.DIRECTED)
-        GraphType.ACYCLIC -> features shouldContainExactly setOf(Feature.ACYCLIC)
-        GraphType.DIRECTED_ACYCLIC ->
-            features shouldContainExactlyInAnyOrder setOf(Feature.DIRECTED, Feature.ACYCLIC)
+        GraphType.UNDIRECTED -> {
+          features shouldBe emptySet()
+          isUndirected shouldBe true
+          isAcyclic shouldBe false
+        }
+        GraphType.DIRECTED -> {
+          features shouldContainExactly setOf(Feature.DIRECTED)
+          isDirected shouldBe true
+          isAcyclic shouldBe false
+        }
+        GraphType.ACYCLIC -> {
+          features shouldContainExactly setOf(Feature.ACYCLIC)
+          isUndirected shouldBe true
+          isAcyclic shouldBe true
+        }
+        GraphType.DIRECTED_ACYCLIC -> {
+          features shouldContainExactlyInAnyOrder setOf(Feature.DIRECTED, Feature.ACYCLIC)
+          isDirected shouldBe true
+          isAcyclic shouldBe true
+        }
       }
       checkContainsVertex()
       checkContainsEdge()
@@ -220,9 +271,9 @@ class GraphTests :
       val statement = { source: String, target: String, i: Int ->
         "$source ${if (isDirected) "->" else "--"} $target${when (E::class) {
           BasicEdge::class -> null
-          WeightedEdge::class -> "[weight=$i]"
-          GenericEdge::class -> "[attributes=\"${i.toDouble()}\"]"
-          WeightedGenericEdge::class -> "[weight=$i, attributes=\"${i.toDouble()}\"]"
+          WeightedEdge::class -> "[weight=$i, label=$i]"
+          GenericEdge::class -> "[label=\"${i.toDouble()}\"]"
+          WeightedGenericEdge::class -> "[weight=$i, label=\"weight: $i, attributes: ${i.toDouble()}\"]"
           else -> UNKNOWN_EDGE_TYPE
         }?.let { " $it" }.orEmpty() + ";"}"
       }

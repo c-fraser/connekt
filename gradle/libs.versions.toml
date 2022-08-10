@@ -1,12 +1,14 @@
 [versions]
 kotlin = "1.7.10"
 kotest = "5.4.1"
+knit = "0.4.0"
 
 [libraries]
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
 kotest-framework-engine = { module = "io.kotest:kotest-framework-engine", version.ref = "kotest" }
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
-knit = { module = "org.jetbrains.kotlinx:kotlinx-knit", version = "0.4.0" }
+knit = { module = "org.jetbrains.kotlinx:kotlinx-knit", version.ref = "knit" }
+knit-test = { module = "org.jetbrains.kotlinx:kotlinx-knit-test", version.ref = "knit" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -17,3 +19,4 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.21.0" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version = "1.1.0" }
 jreleaser = { id = "org.jreleaser", version = "1.1.0" }
 dependency-versions = { id = "com.github.ben-manes.versions", version = "0.42.0" }
+kover = { id = "org.jetbrains.kotlinx.kover", version = "0.5.1" }
