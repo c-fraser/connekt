@@ -18,6 +18,7 @@ import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import io.gitlab.arturbosch.detekt.Detekt
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.dokka.gradle.AbstractDokkaTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jreleaser.gradle.plugin.JReleaserExtension
 import org.jreleaser.model.Active
@@ -119,7 +120,16 @@ configure<SpotlessExtension> {
 }
 
 publishing {
+  val dokkaJavadocJar by
+      tasks.creating(Jar::class) {
+        val dokkaJavadoc by tasks.getting(AbstractDokkaTask::class)
+        dependsOn(dokkaJavadoc)
+        archiveClassifier.set("javadoc")
+        from(dokkaJavadoc.outputDirectory.get())
+      }
+
   publications.withType<MavenPublication> {
+    artifact(dokkaJavadocJar)
     pom {
       name.set(project.name)
       description.set("${project.name}-${project.version}")
