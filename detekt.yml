@@ -2,7 +2,7 @@ complexity:
   ComplexMethod:
     threshold: 20
   TooManyFunctions:
-    thresholdInClasses: 15
+    thresholdInClasses: 20
 
 style:
   DestructuringDeclarationWithTooManyEntries:

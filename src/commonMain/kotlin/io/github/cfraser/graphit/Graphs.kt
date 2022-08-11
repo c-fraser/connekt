@@ -15,6 +15,8 @@ limitations under the License.
 */
 package io.github.cfraser.graphit
 
+import kotlin.math.min
+
 /**
  * [Graph] is a generic immutable graph data structure consisting of vertices and edges.
  *
@@ -85,9 +87,8 @@ interface Graph<V : Any, E : Edge<V>> {
   fun traverse(strategy: TraversalStrategy<V>): Iterable<V>
 
   /**
-   * Compute the shortest path between the [vertices].
-   *
-   * > The shortest path computation runs in `O(V+E*log(V))` time.
+   * Computes the shortest path between the [vertices], using
+   * [Dijkstra's](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) algorithm.
    *
    * If the graph is weighted, then the [WeightedEdge.weight] is considered in the path calculation.
    *
@@ -101,6 +102,18 @@ interface Graph<V : Any, E : Edge<V>> {
    * @return the shortest path, including the given [vertices]
    */
   fun shortestPath(vertices: Vertices<V>): Collection<V>
+
+  /**
+   * Determine the strongly connected components within the graph, using
+   * [Tarjan's](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm)
+   * algorithm.
+   *
+   * > [stronglyConnectedComponents] is only applicable for [Feature.DIRECTED] graphs.
+   *
+   * @throws UndirectedException if the graph is undirected
+   * @return the paths of the strongly connected vertices
+   */
+  fun stronglyConnectedComponents(): Collection<Collection<V>>
 
   /**
    * Returns the [DOT language](https://graphviz.org/doc/info/lang.html) representation of the
@@ -159,14 +172,10 @@ internal class InMemoryGraph<V : Any, E : Edge<V>>(override val features: Set<Fe
         false
       }
 
-  override fun get(vertex: V): Collection<E> =
-      vertex
-          .exists()
-          .let {
-            fun MutableMap<V, MutableMap<V, E>>.edges() = this[it]?.values.orEmpty()
-            outEdges.edges() + inEdges.edges()
-          }
-          .toSet()
+  override fun get(vertex: V): Collection<E> {
+    fun MutableMap<V, MutableMap<V, E>>.edges() = this[vertex]?.values.orEmpty()
+    return vertex.exists().let { outEdges.edges() + inEdges.edges() }.toSet()
+  }
 
   override fun get(vertices: Vertices<V>): E {
     val (source, target) = vertices.exists()
@@ -174,17 +183,17 @@ internal class InMemoryGraph<V : Any, E : Edge<V>>(override val features: Set<Fe
   }
 
   override fun traverse(strategy: TraversalStrategy<V>): Iterable<V> {
-    val vertices = strategy.queue()
+    val queue = strategy.queue()
     val visited = mutableMapOf<V, Boolean>()
 
-    vertices.offer(strategy.vertex.exists())
+    queue.offer(strategy.vertex.exists())
 
     return buildList {
       while (true) {
-        val vertex = vertices.poll() ?: break
+        val vertex = queue.poll() ?: break
         this += vertex
         visited[vertex] = true
-        vertex.adjacentVertices().filter { it !in visited }.forEach(vertices::offer)
+        vertex.adjacentVertices().filterNot { it in visited }.forEach(queue::offer)
       }
     }
   }
@@ -227,6 +236,56 @@ internal class InMemoryGraph<V : Any, E : Edge<V>>(override val features: Set<Fe
         .reversed()
   }
 
+  override fun stronglyConnectedComponents(): Collection<Collection<V>> {
+    if (isUndirected) throw UndirectedException
+
+    class State {
+      val components: MutableCollection<Collection<V>> = mutableListOf()
+      val queue: LIFOQueue<V> = LIFOQueue()
+      val queued: MutableMap<V, Boolean> = mutableMapOf()
+      val visited: MutableMap<V, Boolean> = mutableMapOf()
+      val indices: MutableMap<V, Int> = mutableMapOf()
+      val lowLink: MutableMap<V, Int> = mutableMapOf()
+      var index: Int = 0
+    }
+
+    fun visit(vertex: V, state: State) {
+      if (vertex in state.visited) return
+
+      state.queue.offer(vertex)
+      state.queued[vertex] = true
+      state.visited[vertex] = true
+      state.indices[vertex] = state.index
+      state.lowLink[vertex] = state.index
+      state.index += 1
+
+      for (adjacency in outEdges[vertex]?.keys.orEmpty()) when {
+        adjacency !in state.visited -> {
+          visit(adjacency, state)
+          state.lowLink[vertex] =
+              min(checkNotNull(state.lowLink[vertex]), checkNotNull(state.lowLink[adjacency]))
+        }
+        adjacency in state.visited && adjacency in state.queued -> {
+          state.lowLink[vertex] =
+              min(checkNotNull(state.lowLink[vertex]), checkNotNull(state.indices[adjacency]))
+        }
+      }
+
+      if (state.lowLink[vertex] == state.indices[vertex])
+          state.components +=
+              buildList<V> {
+                var v: V
+                do {
+                  v = state.queue.poll() ?: break
+                  state.queued[v] = false
+                  this += v
+                } while (v != vertex)
+              }
+    }
+
+    return State().apply { vertices.forEach { visit(it, this) } }.components
+  }
+
   override fun toString(): String {
     val (graphType, edgeOperator) = if (isDirected) "digraph" to "->" else "graph" to "--"
     data class Statement(val source: V, val target: V, val weight: Int?, val attributes: Any?)
@@ -237,7 +296,7 @@ internal class InMemoryGraph<V : Any, E : Edge<V>>(override val features: Set<Fe
                 Statement(source, target, edge.weight(), edge.attributes())
               }
             }
-            .distinctBy { setOf(it.source, it.target) }
+            .distinctBy { if (isDirected) it else setOf(it.source, it.target) }
             .map { (source, target, weight, attributes) ->
               "$source $edgeOperator $target${when {
                 weight != null && attributes != null -> 
@@ -305,7 +364,7 @@ internal class InMemoryGraph<V : Any, E : Edge<V>>(override val features: Set<Fe
         val vertex = vertices.poll() ?: break
         if (vertex == edge.target) return true
         visited[vertex] = true
-        inEdges[vertex]?.keys?.filter { it !in visited }?.forEach(vertices::offer)
+        inEdges[vertex]?.keys?.filterNot { it in visited }?.forEach(vertices::offer)
       }
     }
 

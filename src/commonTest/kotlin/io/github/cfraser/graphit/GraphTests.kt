@@ -76,15 +76,6 @@ class GraphTests :
           }
         }
       }
-      "TEST" {
-        println(
-            buildGraph {
-              this += 1 to 2 with "A"
-              this += 2 to 3 with "B"
-              this += 1 to 4 with "C"
-              this += 4 to 5 with "D"
-            })
-      }
     }) {
 
   private companion object {

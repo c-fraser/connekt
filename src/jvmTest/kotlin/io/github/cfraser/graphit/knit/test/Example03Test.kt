@@ -22,7 +22,7 @@ import kotlinx.knit.test.captureOutput
 import kotlinx.knit.test.verifyOutputLines
 
 class Example03Test : StringSpec({
-  "verify Example03 graph" {
+  "verify Example03" {
   captureOutput("Example03") { io.github.cfraser.graphit.knit.runExample03() }.verifyOutputLines(
       "strict graph {",
       "A -- B [weight=3, label=3];",

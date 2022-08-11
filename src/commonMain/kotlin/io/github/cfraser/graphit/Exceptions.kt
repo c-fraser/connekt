@@ -44,3 +44,10 @@ object LoopException : GraphException("An edge in cannot connect a vertex to its
  */
 class AcyclicException(edge: Edge<*>) :
     GraphException("A path from ${edge.source} to ${edge.target} introduces a cycle in the graph")
+
+/**
+ * [UndirectedException] is thrown when an undirected graph attempts to find strongly connected
+ * components.
+ */
+object UndirectedException :
+    GraphException("An undirected graph does not contain strong connections")

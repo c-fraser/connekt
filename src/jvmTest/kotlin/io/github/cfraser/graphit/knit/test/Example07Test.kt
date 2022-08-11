@@ -21,10 +21,10 @@ import io.kotest.core.spec.style.StringSpec
 import kotlinx.knit.test.captureOutput
 import kotlinx.knit.test.verifyOutputLines
 
-class Example05Test : StringSpec({
-  "verify Example05" {
-  captureOutput("Example05") { io.github.cfraser.graphit.knit.runExample05() }.verifyOutputLines(
-      "1, 3, 4, 2"
+class Example07Test : StringSpec({
+  "verify Example07" {
+  captureOutput("Example07") { io.github.cfraser.graphit.knit.runExample07() }.verifyOutputLines(
+      "A, C, E, B"
   )
   }
 })

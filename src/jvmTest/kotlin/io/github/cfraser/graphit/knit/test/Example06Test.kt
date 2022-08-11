@@ -22,9 +22,9 @@ import kotlinx.knit.test.captureOutput
 import kotlinx.knit.test.verifyOutputLines
 
 class Example06Test : StringSpec({
-  "verify Example06 graph" {
+  "verify Example06" {
   captureOutput("Example06") { io.github.cfraser.graphit.knit.runExample06() }.verifyOutputLines(
-      "A, C, E, B"
+      "1, 2, 3, 4"
   )
   }
 })

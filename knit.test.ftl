@@ -23,7 +23,7 @@ import kotlinx.knit.test.verifyOutputLines
 
 class ${test.name} : StringSpec({
 <#list cases as case><#assign method = test["mode.${case.param}"]!"custom">
-  "verify ${case.name} graph" {
+  "verify ${case.name}" {
   captureOutput("${case.name}") { ${case.knit.package}.run${case.knit.name}() }.${method}(
     <#list case.lines as line>
       "${line?j_string}"<#sep>,</#sep>

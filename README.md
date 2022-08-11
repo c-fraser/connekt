@@ -15,12 +15,14 @@ flexible graph data structure.
 * [Features](#features)
 * [Usage](#usage)
 * [Examples](#examples)
-  * [Create an undirected graph](#create-an-undirected-graph)
-  * [Create a directed acyclic graph](#create-a-directed-acyclic-graph)
-  * [Create a weighted graph](#create-a-weighted-graph)
-  * [Create a graph with generic edge attributes](#create-a-graph-with-generic-edge-attributes)
-  * [Traverse a graph (depth-first search)](#traverse-a-graph-depth-first-search)
+  * [Build an undirected graph](#build-an-undirected-graph)
+  * [Build a directed acyclic graph](#build-a-directed-acyclic-graph)
+  * [Build a weighted graph](#build-a-weighted-graph)
+  * [Build a graph with generic edge attributes](#build-a-graph-with-generic-edge-attributes)
+  * [Traverse a graph depth-first](#traverse-a-graph-depth-first)
+  * [Traverse a graph breadth-first](#traverse-a-graph-breadth-first)
   * [Find the shortest path between vertices](#find-the-shortest-path-between-vertices)
+  * [Get the strongly connected components](#get-the-strongly-connected-components)
   * [Visualize a graph with Graphviz](#visualize-a-graph-with-graphviz)
 * [License](#license)
 * [Acknowledgements](#acknowledgements)
@@ -36,7 +38,9 @@ flexible graph data structure.
 * Type-safe builder DSL which validates the graph type constraints.
 * [Depth-first](https://en.wikipedia.org/wiki/Depth-first_search)
   and [breadth-first](https://en.wikipedia.org/wiki/Breadth-first_search) traversal.
-* [Dijkstra's shortest path algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm).
+* [Dijkstra's](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) shortest path algorithm.
+* [Tarjan's](https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm)
+  strongly connected components algorithm.
 * `Graph` visualization through [Graphviz](https://graphviz.org/).
 
 ## Usage
@@ -46,7 +50,7 @@ via [Maven Central](https://search.maven.org/search?q=g:io.github.c-fraser%20AND
 
 ## Examples
 
-### Create an undirected graph
+### Build an undirected graph
 
 ![example-01](docs/example-01.svg)
 
@@ -98,7 +102,7 @@ strict graph {
 ' | dot -Tsvg > docs/example-01.svg
 -->
 
-### Create a directed acyclic graph
+### Build a directed acyclic graph
 
 ![example-02](docs/example-02.svg)
 
@@ -149,7 +153,7 @@ strict digraph {
 ' | dot -Tsvg > docs/example-02.svg
 -->
 
-### Create a weighted graph
+### Build a weighted graph
 
 ![example-03](docs/example-03.svg)
 
@@ -201,7 +205,7 @@ C -- D [weight=4, label=4];
 ' | dot -Tsvg > docs/example-03.svg
 -->
 
-### Create a graph with generic edge attributes
+### Build a graph with generic edge attributes
 
 ![example-04](docs/example-04.svg)
 
@@ -247,7 +251,7 @@ strict graph {
 ' | dot -Tsvg > docs/example-04.svg
 -->
 
-### Traverse a graph (depth-first search)
+### Traverse a graph depth-first
 
 ![example-05](docs/example-05.svg)
 
@@ -290,17 +294,60 @@ strict digraph {
 ' | dot -Tsvg > docs/example-05.svg
 -->
 
-### Find the shortest path between vertices
+### Traverse a graph breadth-first
 
 ![example-06](docs/example-06.svg)
 
 <!--- TEST_NAME Example06Test --> 
 
 <!--- INCLUDE
+import io.github.cfraser.graphit.BreadthFirst
+import io.github.cfraser.graphit.buildGraph
+import io.github.cfraser.graphit.Feature.DIRECTED
+
+fun runExample06() {
+----- SUFFIX
+}
+-->
+
+```kotlin
+val graph = buildGraph(DIRECTED) {
+  this += 1 to 2
+  this += 1 to 3
+  this += 3 to 4
+}
+val vertices = graph.traverse(BreadthFirst(1))
+println(vertices.joinToString())
+```
+
+```text
+1, 2, 3, 4
+```
+
+<!--- KNIT Example06.kt --> 
+<!--- TEST -->
+
+<!---
+echo '
+strict digraph {
+1 -> 2;
+1 -> 3;
+3 -> 4;
+}
+' | dot -Tsvg > docs/example-06.svg
+-->
+
+### Find the shortest path between vertices
+
+![example-07](docs/example-07.svg)
+
+<!--- TEST_NAME Example07Test --> 
+
+<!--- INCLUDE
 import io.github.cfraser.graphit.buildGraph
 import io.github.cfraser.graphit.DepthFirst
 
-fun runExample06() {
+fun runExample07() {
 ----- SUFFIX
 }
 -->
@@ -327,7 +374,7 @@ println(path.joinToString())
 A, C, E, B
 ```
 
-<!--- KNIT Example06.kt --> 
+<!--- KNIT Example07.kt --> 
 <!--- TEST -->
 
 <!---
@@ -345,7 +392,71 @@ D -- B [weight=1, label=1];
 E -- B [weight=2, label=2];
 B -- G [weight=2, label=2];
 }
-' | dot -Tsvg > docs/example-06.svg
+' | dot -Tsvg > docs/example-07.svg
+-->
+
+### Get the strongly connected components
+
+![example-08](docs/example-08.svg)
+
+<!--- TEST_NAME Example08Test --> 
+
+<!--- INCLUDE
+import io.github.cfraser.graphit.buildGraph
+import io.github.cfraser.graphit.Feature.DIRECTED
+
+fun runExample08() {
+----- SUFFIX
+}
+-->
+
+```kotlin
+val graph = buildGraph(DIRECTED) {
+  this += 1 to 2
+  this += 2 to 3
+  this += 2 to 5
+  this += 2 to 6
+  this += 3 to 4
+  this += 3 to 7
+  this += 4 to 3
+  this += 4 to 8
+  this += 5 to 1
+  this += 5 to 6
+  this += 6 to 7
+  this += 7 to 6
+  this += 8 to 4
+  this += 8 to 7
+}
+val components = graph.stronglyConnectedComponents()
+println(components)
+```
+
+```text
+[[6, 7], [8, 4, 3], [5, 2, 1]]
+```
+
+<!--- KNIT Example08.kt --> 
+<!--- TEST -->
+
+<!---
+echo '
+strict digraph {
+1 -> 2;
+2 -> 3;
+2 -> 5;
+2 -> 6;
+3 -> 4;
+3 -> 7;
+5 -> 1;
+5 -> 6;
+6 -> 7;
+4 -> 3;
+4 -> 8;
+7 -> 6;
+8 -> 4;
+8 -> 7;
+}
+' | dot -Tsvg > docs/example-08.svg
 -->
 
 ### Visualize a graph with Graphviz
