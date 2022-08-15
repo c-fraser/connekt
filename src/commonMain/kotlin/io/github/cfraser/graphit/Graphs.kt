@@ -239,51 +239,46 @@ internal class InMemoryGraph<V : Any, E : Edge<V>>(override val features: Set<Fe
   override fun stronglyConnectedComponents(): Collection<Collection<V>> {
     if (isUndirected) throw UndirectedException
 
-    class State {
-      val components: MutableCollection<Collection<V>> = mutableListOf()
-      val queue: LIFOQueue<V> = LIFOQueue()
-      val queued: MutableMap<V, Boolean> = mutableMapOf()
-      val visited: MutableMap<V, Boolean> = mutableMapOf()
-      val indices: MutableMap<V, Int> = mutableMapOf()
-      val lowLink: MutableMap<V, Int> = mutableMapOf()
-      var index: Int = 0
-    }
+    val components = mutableListOf<Collection<V>>()
+    val queue = LIFOQueue<V>()
+    val queued = mutableMapOf<V, Boolean>()
+    val visited = mutableMapOf<V, Boolean>()
+    val indices = mutableMapOf<V, Int>()
+    val lowLink = mutableMapOf<V, Int>()
+    var index = 0
 
-    fun visit(vertex: V, state: State) {
-      if (vertex in state.visited) return
+    fun visit(vertex: V) {
+      if (vertex in visited) return
 
-      state.queue.offer(vertex)
-      state.queued[vertex] = true
-      state.visited[vertex] = true
-      state.indices[vertex] = state.index
-      state.lowLink[vertex] = state.index
-      state.index += 1
+      queue.offer(vertex)
+      queued[vertex] = true
+      visited[vertex] = true
+      indices[vertex] = index
+      lowLink[vertex] = index
+      index += 1
 
       for (adjacency in outEdges[vertex]?.keys.orEmpty()) when {
-        adjacency !in state.visited -> {
-          visit(adjacency, state)
-          state.lowLink[vertex] =
-              min(checkNotNull(state.lowLink[vertex]), checkNotNull(state.lowLink[adjacency]))
+        adjacency !in visited -> {
+          visit(adjacency)
+          lowLink[vertex] = min(checkNotNull(lowLink[vertex]), checkNotNull(lowLink[adjacency]))
         }
-        adjacency in state.visited && adjacency in state.queued -> {
-          state.lowLink[vertex] =
-              min(checkNotNull(state.lowLink[vertex]), checkNotNull(state.indices[adjacency]))
-        }
+        adjacency in visited && adjacency in queued ->
+            lowLink[vertex] = min(checkNotNull(lowLink[vertex]), checkNotNull(indices[adjacency]))
       }
 
-      if (state.lowLink[vertex] == state.indices[vertex])
-          state.components +=
+      if (lowLink[vertex] == indices[vertex])
+          components +=
               buildList<V> {
                 var v: V
                 do {
-                  v = state.queue.poll() ?: break
-                  state.queued[v] = false
+                  v = queue.poll() ?: break
+                  queued[v] = false
                   this += v
                 } while (v != vertex)
               }
     }
 
-    return State().apply { vertices.forEach { visit(it, this) } }.components
+    return vertices.forEach(::visit).let { components }
   }
 
   override fun toString(): String {
