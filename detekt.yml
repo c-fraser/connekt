@@ -1,5 +1,5 @@
 complexity:
-  ComplexMethod:
+  CyclomaticComplexMethod:
     threshold: 20
   TooManyFunctions:
     thresholdInClasses: 20

@@ -1,11 +1,11 @@
-# graph-it
+# connekt
 
-[![Test](https://github.com/c-fraser/graph-it/workflows/Test/badge.svg)](https://github.com/c-fraser/graph-it/actions)
-[![Release](https://img.shields.io/github/v/release/c-fraser/graph-it?logo=github&sort=semver)](https://github.com/c-fraser/graph-it/releases)
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.c-fraser/graph-it.svg)](https://search.maven.org/search?q=g:io.github.c-fraser%20AND%20a:graph-it*)
+[![Test](https://github.com/c-fraser/connekt/workflows/Test/badge.svg)](https://github.com/c-fraser/connekt/actions)
+[![Release](https://img.shields.io/github/v/release/c-fraser/connekt?logo=github&sort=semver)](https://github.com/c-fraser/connekt/releases)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.c-fraser/connekt.svg)](https://search.maven.org/search?q=g:io.github.c-fraser%20AND%20a:connekt*)
 [![Apache License 2.0](https://img.shields.io/badge/License-Apache2-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-`graph-it` is a Kotlin (multiplatform) library for interacting with interconnected objects through a
+`connekt` is a Kotlin (multiplatform) library for interacting with interconnected objects through a
 flexible graph data structure.
 
 ## Contents
@@ -45,8 +45,8 @@ flexible graph data structure.
 
 ## Usage
 
-The `graph-it` library is accessible
-via [Maven Central](https://search.maven.org/search?q=g:io.github.c-fraser%20AND%20a:graph-it*).
+The `connekt` library is accessible
+via [Maven Central](https://search.maven.org/search?q=g:io.github.c-fraser%20AND%20a:connekt*).
 
 ## Examples
 
@@ -57,7 +57,7 @@ via [Maven Central](https://search.maven.org/search?q=g:io.github.c-fraser%20AND
 <!--- TEST_NAME Example01Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.buildGraph
+import io.github.cfraser.connekt.buildGraph
 
 fun runExample01() {
 println(
@@ -109,9 +109,9 @@ strict graph {
 <!--- TEST_NAME Example02Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.Feature.ACYCLIC
-import io.github.cfraser.graphit.Feature.DIRECTED
-import io.github.cfraser.graphit.buildGraph
+import io.github.cfraser.connekt.Feature.ACYCLIC
+import io.github.cfraser.connekt.Feature.DIRECTED
+import io.github.cfraser.connekt.buildGraph
 
 fun runExample02() {
 println(
@@ -160,7 +160,7 @@ strict digraph {
 <!--- TEST_NAME Example03Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.buildGraph
+import io.github.cfraser.connekt.buildGraph
 
 fun runExample03() {
 println(
@@ -212,7 +212,7 @@ C -- D [weight=4, label=4];
 <!--- TEST_NAME Example04Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.buildGraph
+import io.github.cfraser.connekt.buildGraph
 
 fun runExample04() {
 println(
@@ -258,9 +258,9 @@ strict graph {
 <!--- TEST_NAME Example05Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.buildGraph
-import io.github.cfraser.graphit.DepthFirst
-import io.github.cfraser.graphit.Feature.DIRECTED
+import io.github.cfraser.connekt.buildGraph
+import io.github.cfraser.connekt.DepthFirst
+import io.github.cfraser.connekt.Feature.DIRECTED
 
 fun runExample05() {
 ----- SUFFIX
@@ -301,9 +301,9 @@ strict digraph {
 <!--- TEST_NAME Example06Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.BreadthFirst
-import io.github.cfraser.graphit.buildGraph
-import io.github.cfraser.graphit.Feature.DIRECTED
+import io.github.cfraser.connekt.BreadthFirst
+import io.github.cfraser.connekt.buildGraph
+import io.github.cfraser.connekt.Feature.DIRECTED
 
 fun runExample06() {
 ----- SUFFIX
@@ -344,8 +344,8 @@ strict digraph {
 <!--- TEST_NAME Example07Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.buildGraph
-import io.github.cfraser.graphit.DepthFirst
+import io.github.cfraser.connekt.buildGraph
+import io.github.cfraser.connekt.DepthFirst
 
 fun runExample07() {
 ----- SUFFIX
@@ -402,8 +402,8 @@ B -- G [weight=2, label=2];
 <!--- TEST_NAME Example08Test --> 
 
 <!--- INCLUDE
-import io.github.cfraser.graphit.buildGraph
-import io.github.cfraser.graphit.Feature.DIRECTED
+import io.github.cfraser.connekt.buildGraph
+import io.github.cfraser.connekt.Feature.DIRECTED
 
 fun runExample08() {
 ----- SUFFIX
@@ -504,4 +504,4 @@ dot -Tsvg -O graph.dot
 ## Acknowledgements
 
 Kudos to the [(Go) graph package](https://github.com/dominikbraun/graph) which significantly
-influenced the implementation of `graph-it`.
+influenced the implementation of `connekt`.

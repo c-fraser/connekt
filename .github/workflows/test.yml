@@ -1,4 +1,4 @@
-name: Test
+name: test
 on:
   push:
     branches: [ '**' ]
@@ -17,17 +17,17 @@ jobs:
           - os: windows-latest
             test-task: mingwX64Test
           - os: ubuntu-latest
-            test-task: check
+            test-task: linuxX64Test
     runs-on: ${{matrix.os}}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: '0'
-      - name: Setup Java
+      - name: setup Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: 11
-      - name: Execute test
+      - name: execute test
         run: ./gradlew ${{matrix.test-task}} --stacktrace

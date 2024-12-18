@@ -1,0 +1,181 @@
+public final class io/github/cfraser/connekt/AcyclicException : io/github/cfraser/connekt/GraphException {
+	public fun <init> (Lio/github/cfraser/connekt/Edge;)V
+}
+
+public final class io/github/cfraser/connekt/BasicEdge : io/github/cfraser/connekt/Edge {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;Ljava/lang/Object;)Lio/github/cfraser/connekt/BasicEdge;
+	public static synthetic fun copy$default (Lio/github/cfraser/connekt/BasicEdge;Ljava/lang/Object;Ljava/lang/Object;ILjava/lang/Object;)Lio/github/cfraser/connekt/BasicEdge;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getSource ()Ljava/lang/Object;
+	public fun getTarget ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/cfraser/connekt/BreadthFirst : io/github/cfraser/connekt/TraversalStrategy {
+	public fun <init> (Ljava/lang/Object;)V
+}
+
+public final class io/github/cfraser/connekt/BuildersKt {
+	public static final fun buildGraph ([Lio/github/cfraser/connekt/Feature;Lkotlin/jvm/functions/Function1;)Lio/github/cfraser/connekt/Graph;
+	public static synthetic fun buildGraph$default ([Lio/github/cfraser/connekt/Feature;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/cfraser/connekt/Graph;
+}
+
+public final class io/github/cfraser/connekt/DepthFirst : io/github/cfraser/connekt/TraversalStrategy {
+	public fun <init> (Ljava/lang/Object;)V
+}
+
+public abstract interface class io/github/cfraser/connekt/Edge {
+	public abstract fun getSource ()Ljava/lang/Object;
+	public abstract fun getTarget ()Ljava/lang/Object;
+}
+
+public final class io/github/cfraser/connekt/EdgeAlreadyExists : io/github/cfraser/connekt/GraphException {
+	public fun <init> (Lio/github/cfraser/connekt/Edge;)V
+}
+
+public abstract interface class io/github/cfraser/connekt/EdgeDsl {
+	public abstract fun to (Ljava/lang/Object;Ljava/lang/Object;)Lio/github/cfraser/connekt/BasicEdge;
+	public abstract fun weighs (Lio/github/cfraser/connekt/BasicEdge;I)Lio/github/cfraser/connekt/WeightedEdge;
+	public abstract fun with (Lio/github/cfraser/connekt/BasicEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/GenericEdge;
+	public abstract fun with (Lio/github/cfraser/connekt/WeightedEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/WeightedGenericEdge;
+}
+
+public final class io/github/cfraser/connekt/EdgeDsl$DefaultImpls {
+	public static fun to (Lio/github/cfraser/connekt/EdgeDsl;Ljava/lang/Object;Ljava/lang/Object;)Lio/github/cfraser/connekt/BasicEdge;
+	public static fun weighs (Lio/github/cfraser/connekt/EdgeDsl;Lio/github/cfraser/connekt/BasicEdge;I)Lio/github/cfraser/connekt/WeightedEdge;
+	public static fun with (Lio/github/cfraser/connekt/EdgeDsl;Lio/github/cfraser/connekt/BasicEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/GenericEdge;
+	public static fun with (Lio/github/cfraser/connekt/EdgeDsl;Lio/github/cfraser/connekt/WeightedEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/WeightedGenericEdge;
+}
+
+public final class io/github/cfraser/connekt/EdgeNotFound : io/github/cfraser/connekt/GraphException {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;)V
+}
+
+public final class io/github/cfraser/connekt/Feature : java/lang/Enum {
+	public static final field ACYCLIC Lio/github/cfraser/connekt/Feature;
+	public static final field DIRECTED Lio/github/cfraser/connekt/Feature;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/cfraser/connekt/Feature;
+	public static fun values ()[Lio/github/cfraser/connekt/Feature;
+}
+
+public final class io/github/cfraser/connekt/FeaturesKt {
+	public static final fun isAcyclic (Lio/github/cfraser/connekt/Graph;)Z
+	public static final fun isDirected (Lio/github/cfraser/connekt/Graph;)Z
+	public static final fun isUndirected (Lio/github/cfraser/connekt/Graph;)Z
+}
+
+public abstract interface class io/github/cfraser/connekt/Generic {
+	public abstract fun getAttributes ()Ljava/lang/Object;
+}
+
+public final class io/github/cfraser/connekt/GenericEdge : io/github/cfraser/connekt/Edge, io/github/cfraser/connekt/Generic {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/Object;
+	public final fun component3 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lio/github/cfraser/connekt/GenericEdge;
+	public static synthetic fun copy$default (Lio/github/cfraser/connekt/GenericEdge;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;ILjava/lang/Object;)Lio/github/cfraser/connekt/GenericEdge;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAttributes ()Ljava/lang/Object;
+	public fun getSource ()Ljava/lang/Object;
+	public fun getTarget ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/cfraser/connekt/Graph {
+	public abstract fun contains (Ljava/lang/Object;)Z
+	public abstract fun contains (Lkotlin/Pair;)Z
+	public abstract fun get (Ljava/lang/Object;)Ljava/util/Collection;
+	public abstract fun get (Lkotlin/Pair;)Lio/github/cfraser/connekt/Edge;
+	public abstract fun getFeatures ()Ljava/util/Set;
+	public abstract fun shortestPath (Lkotlin/Pair;)Ljava/util/Collection;
+	public abstract fun stronglyConnectedComponents ()Ljava/util/Collection;
+	public abstract fun toString ()Ljava/lang/String;
+	public abstract fun traverse (Lio/github/cfraser/connekt/TraversalStrategy;)Ljava/lang/Iterable;
+}
+
+public abstract interface class io/github/cfraser/connekt/GraphBuilder : io/github/cfraser/connekt/EdgeDsl {
+	public abstract fun add (Lio/github/cfraser/connekt/Edge;)Lio/github/cfraser/connekt/GraphBuilder;
+	public abstract fun addAll (Ljava/lang/Iterable;)Lio/github/cfraser/connekt/GraphBuilder;
+	public abstract fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/Edge;)V
+	public abstract fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Ljava/lang/Iterable;)V
+}
+
+public final class io/github/cfraser/connekt/GraphBuilder$DefaultImpls {
+	public static fun addAll (Lio/github/cfraser/connekt/GraphBuilder;Ljava/lang/Iterable;)Lio/github/cfraser/connekt/GraphBuilder;
+	public static fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/Edge;)V
+	public static fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/GraphBuilder;Ljava/lang/Iterable;)V
+	public static fun to (Lio/github/cfraser/connekt/GraphBuilder;Ljava/lang/Object;Ljava/lang/Object;)Lio/github/cfraser/connekt/BasicEdge;
+	public static fun weighs (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/BasicEdge;I)Lio/github/cfraser/connekt/WeightedEdge;
+	public static fun with (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/BasicEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/GenericEdge;
+	public static fun with (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/WeightedEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/WeightedGenericEdge;
+}
+
+public abstract class io/github/cfraser/connekt/GraphException : java/lang/RuntimeException {
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getMessage ()Ljava/lang/String;
+}
+
+public final class io/github/cfraser/connekt/LoopException : io/github/cfraser/connekt/GraphException {
+	public static final field INSTANCE Lio/github/cfraser/connekt/LoopException;
+}
+
+public final class io/github/cfraser/connekt/NoPathExists : io/github/cfraser/connekt/GraphException {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;)V
+}
+
+public abstract class io/github/cfraser/connekt/TraversalStrategy {
+	public synthetic fun <init> (Ljava/lang/Object;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getVertex ()Ljava/lang/Object;
+}
+
+public final class io/github/cfraser/connekt/UndirectedException : io/github/cfraser/connekt/GraphException {
+	public static final field INSTANCE Lio/github/cfraser/connekt/UndirectedException;
+}
+
+public final class io/github/cfraser/connekt/VertexNotFound : io/github/cfraser/connekt/GraphException {
+	public fun <init> (Ljava/lang/Object;)V
+}
+
+public abstract interface class io/github/cfraser/connekt/Weighted {
+	public abstract fun getWeight ()I
+}
+
+public final class io/github/cfraser/connekt/WeightedEdge : io/github/cfraser/connekt/Edge, io/github/cfraser/connekt/Weighted {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;I)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/Object;
+	public final fun component3 ()I
+	public final fun copy (Ljava/lang/Object;Ljava/lang/Object;I)Lio/github/cfraser/connekt/WeightedEdge;
+	public static synthetic fun copy$default (Lio/github/cfraser/connekt/WeightedEdge;Ljava/lang/Object;Ljava/lang/Object;IILjava/lang/Object;)Lio/github/cfraser/connekt/WeightedEdge;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getSource ()Ljava/lang/Object;
+	public fun getTarget ()Ljava/lang/Object;
+	public fun getWeight ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/cfraser/connekt/WeightedGenericEdge : io/github/cfraser/connekt/Edge, io/github/cfraser/connekt/Generic, io/github/cfraser/connekt/Weighted {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;ILjava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/Object;
+	public final fun component3 ()I
+	public final fun component4 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;Ljava/lang/Object;ILjava/lang/Object;)Lio/github/cfraser/connekt/WeightedGenericEdge;
+	public static synthetic fun copy$default (Lio/github/cfraser/connekt/WeightedGenericEdge;Ljava/lang/Object;Ljava/lang/Object;ILjava/lang/Object;ILjava/lang/Object;)Lio/github/cfraser/connekt/WeightedGenericEdge;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getAttributes ()Ljava/lang/Object;
+	public fun getSource ()Ljava/lang/Object;
+	public fun getTarget ()Ljava/lang/Object;
+	public fun getWeight ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
