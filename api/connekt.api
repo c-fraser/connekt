@@ -124,6 +124,9 @@ public abstract class io/github/cfraser/connekt/GraphException : java/lang/Runti
 
 public final class io/github/cfraser/connekt/LoopException : io/github/cfraser/connekt/GraphException {
 	public static final field INSTANCE Lio/github/cfraser/connekt/LoopException;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/cfraser/connekt/NoPathExists : io/github/cfraser/connekt/GraphException {
@@ -137,6 +140,9 @@ public abstract class io/github/cfraser/connekt/TraversalStrategy {
 
 public final class io/github/cfraser/connekt/UndirectedException : io/github/cfraser/connekt/GraphException {
 	public static final field INSTANCE Lio/github/cfraser/connekt/UndirectedException;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/cfraser/connekt/VertexNotFound : io/github/cfraser/connekt/GraphException {

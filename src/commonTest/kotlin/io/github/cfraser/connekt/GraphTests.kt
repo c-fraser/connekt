@@ -22,61 +22,58 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 
-class GraphTests :
-    StringSpec({
-      "verify an undirected graph with basic edges" { graph().check(GraphType.UNDIRECTED) }
-      "verify an undirected graph with weighted edges" {
-        weightedGraph().check(GraphType.UNDIRECTED)
-      }
-      "verify an undirected graph with generic edges" { genericGraph().check(GraphType.UNDIRECTED) }
-      "verify an undirected graph with weighted generic edges" {
-        weightedGenericGraph().check(GraphType.UNDIRECTED)
-      }
-      "verify a directed graph with basic edges" {
-        graph(Feature.DIRECTED).check(GraphType.DIRECTED)
-      }
-      "verify a directed graph with weighted edges" {
-        weightedGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
-      }
-      "verify a directed graph with generic edges" {
-        genericGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
-      }
-      "verify a directed graph with weighted generic edges" {
-        weightedGenericGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
-      }
-      "verify an acyclic graph with basic edges" { graph(Feature.ACYCLIC).check(GraphType.ACYCLIC) }
-      "verify an acyclic graph with weighted edges" {
-        weightedGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
-      }
-      "verify an acyclic graph with generic edges" {
-        genericGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
-      }
-      "verify an acyclic graph with weighted generic edges" {
-        weightedGenericGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
-      }
-      "verify a directed acyclic graph with basic edges" {
-        graph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
-      }
-      "verify a directed acyclic graph with weighted edges" {
-        weightedGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
-      }
-      "verify a directed acyclic graph with generic edges" {
-        genericGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
-      }
-      "verify a directed acyclic graph with weighted generic edges" {
-        weightedGenericGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
-      }
-      "verify cycle check for a directed acyclic graph" {
-        buildGraph(Feature.DIRECTED, Feature.ACYCLIC) {
-          this += "a" to "b"
-          this += "b" to "c"
-          shouldThrow<AcyclicException> {
-            this += "c" to "a"
-            fail("Expected acyclic exception")
-          }
+class GraphTests : StringSpec() {
+
+  init {
+    "verify an undirected graph with basic edges" { graph().check(GraphType.UNDIRECTED) }
+    "verify an undirected graph with weighted edges" { weightedGraph().check(GraphType.UNDIRECTED) }
+    "verify an undirected graph with generic edges" { genericGraph().check(GraphType.UNDIRECTED) }
+    "verify an undirected graph with weighted generic edges" {
+      weightedGenericGraph().check(GraphType.UNDIRECTED)
+    }
+    "verify a directed graph with basic edges" { graph(Feature.DIRECTED).check(GraphType.DIRECTED) }
+    "verify a directed graph with weighted edges" {
+      weightedGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
+    }
+    "verify a directed graph with generic edges" {
+      genericGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
+    }
+    "verify a directed graph with weighted generic edges" {
+      weightedGenericGraph(Feature.DIRECTED).check(GraphType.DIRECTED)
+    }
+    "verify an acyclic graph with basic edges" { graph(Feature.ACYCLIC).check(GraphType.ACYCLIC) }
+    "verify an acyclic graph with weighted edges" {
+      weightedGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
+    }
+    "verify an acyclic graph with generic edges" {
+      genericGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
+    }
+    "verify an acyclic graph with weighted generic edges" {
+      weightedGenericGraph(Feature.ACYCLIC).check(GraphType.ACYCLIC)
+    }
+    "verify a directed acyclic graph with basic edges" {
+      graph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
+    }
+    "verify a directed acyclic graph with weighted edges" {
+      weightedGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
+    }
+    "verify a directed acyclic graph with generic edges" {
+      genericGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
+    }
+    "verify a directed acyclic graph with weighted generic edges" {
+      weightedGenericGraph(Feature.DIRECTED, Feature.ACYCLIC).check(GraphType.DIRECTED_ACYCLIC)
+    }
+    "verify cycle check for a directed acyclic graph" {
+      buildGraph(Feature.DIRECTED, Feature.ACYCLIC) {
+        this += "a" to "b"
+        this += "b" to "c"
+        shouldThrow<AcyclicException> {
+          this += "c" to "a"
+          fail("Expected acyclic exception")
         }
       }
-    }) {
+    }
+  }
 
   private companion object {
 

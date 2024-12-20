@@ -36,7 +36,7 @@ class NoPathExists(source: Any, target: Any) :
     GraphException("No path from $source to $target exists")
 
 /** [LoopException] is thrown when an edge connects a vertex to itself. */
-object LoopException : GraphException("An edge in cannot connect a vertex to itself")
+data object LoopException : GraphException("An edge in cannot connect a vertex to itself")
 
 /**
  * [AcyclicException] is thrown when a path between the vertices would violate the acyclic
@@ -49,5 +49,5 @@ class AcyclicException(edge: Edge<*>) :
  * [UndirectedException] is thrown when an undirected graph attempts to find strongly connected
  * components.
  */
-object UndirectedException :
+data object UndirectedException :
     GraphException("An undirected graph does not contain strong connections")

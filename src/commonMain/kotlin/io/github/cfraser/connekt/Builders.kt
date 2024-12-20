@@ -35,7 +35,7 @@ import kotlin.experimental.ExperimentalTypeInference
  */
 @OptIn(ExperimentalTypeInference::class, ExperimentalContracts::class)
 fun <V : Any, E : Edge<V>> buildGraph(
-    vararg features: Feature = arrayOf(),
+    vararg features: Feature = emptyArray(),
     @BuilderInference builder: GraphBuilder<V, E>.() -> Unit,
 ): Graph<V, E> {
   contract { callsInPlace(builder, InvocationKind.EXACTLY_ONCE) }
