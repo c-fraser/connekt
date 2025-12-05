@@ -41,5 +41,5 @@ enum class Feature {
   /**
    * Specifies the edges in the graph are [acyclic](https://en.wikipedia.org/wiki/Acyclic_graph).
    */
-  ACYCLIC
+  ACYCLIC,
 }

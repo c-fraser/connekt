@@ -38,10 +38,10 @@ public final class io/github/cfraser/connekt/EdgeAlreadyExists : io/github/cfras
 }
 
 public abstract interface class io/github/cfraser/connekt/EdgeDsl {
-	public abstract fun to (Ljava/lang/Object;Ljava/lang/Object;)Lio/github/cfraser/connekt/BasicEdge;
-	public abstract fun weighs (Lio/github/cfraser/connekt/BasicEdge;I)Lio/github/cfraser/connekt/WeightedEdge;
-	public abstract fun with (Lio/github/cfraser/connekt/BasicEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/GenericEdge;
-	public abstract fun with (Lio/github/cfraser/connekt/WeightedEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/WeightedGenericEdge;
+	public fun to (Ljava/lang/Object;Ljava/lang/Object;)Lio/github/cfraser/connekt/BasicEdge;
+	public fun weighs (Lio/github/cfraser/connekt/BasicEdge;I)Lio/github/cfraser/connekt/WeightedEdge;
+	public fun with (Lio/github/cfraser/connekt/BasicEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/GenericEdge;
+	public fun with (Lio/github/cfraser/connekt/WeightedEdge;Ljava/lang/Object;)Lio/github/cfraser/connekt/WeightedGenericEdge;
 }
 
 public final class io/github/cfraser/connekt/EdgeDsl$DefaultImpls {
@@ -102,9 +102,9 @@ public abstract interface class io/github/cfraser/connekt/Graph {
 
 public abstract interface class io/github/cfraser/connekt/GraphBuilder : io/github/cfraser/connekt/EdgeDsl {
 	public abstract fun add (Lio/github/cfraser/connekt/Edge;)Lio/github/cfraser/connekt/GraphBuilder;
-	public abstract fun addAll (Ljava/lang/Iterable;)Lio/github/cfraser/connekt/GraphBuilder;
-	public abstract fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/Edge;)V
-	public abstract fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Ljava/lang/Iterable;)V
+	public fun addAll (Ljava/lang/Iterable;)Lio/github/cfraser/connekt/GraphBuilder;
+	public fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Lio/github/cfraser/connekt/Edge;)V
+	public fun plusAssign (Lio/github/cfraser/connekt/GraphBuilder;Ljava/lang/Iterable;)V
 }
 
 public final class io/github/cfraser/connekt/GraphBuilder$DefaultImpls {

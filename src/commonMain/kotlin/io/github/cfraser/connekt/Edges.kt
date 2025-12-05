@@ -68,7 +68,7 @@ data class BasicEdge<V : Any>(override val source: V, override val target: V) : 
 data class WeightedEdge<V : Any>(
     override val source: V,
     override val target: V,
-    override val weight: Int
+    override val weight: Int,
 ) : Edge<V>, Weighted {
 
   override fun toString() = "$source -[$weight]-> $target"
@@ -86,7 +86,7 @@ data class WeightedEdge<V : Any>(
 data class GenericEdge<V : Any, T : Any>(
     override val source: V,
     override val target: V,
-    override val attributes: T
+    override val attributes: T,
 ) : Edge<V>, Generic<T> {
 
   override fun toString() = "$source -($attributes)-> $target"
@@ -106,7 +106,7 @@ data class WeightedGenericEdge<V : Any, T : Any>(
     override val source: V,
     override val target: V,
     override val weight: Int,
-    override val attributes: T
+    override val attributes: T,
 ) : Edge<V>, Weighted, Generic<T> {
 
   override fun toString() = "$source -[$weight]-($attributes)-> $target"
@@ -121,7 +121,8 @@ interface EdgeDsl<V : Any> {
 
   /**
    * Initialize a [BasicEdge] from the vertices.
-   * > The receiver `this` is the source and [vertex] is the target.
+   *
+   * The receiver `this` is the source and [vertex] is the target.
    *
    * @param vertex the target vertices
    * @return the edge

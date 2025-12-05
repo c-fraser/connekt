@@ -144,7 +144,7 @@ class GraphTests : StringSpec() {
       UNDIRECTED,
       DIRECTED,
       ACYCLIC,
-      DIRECTED_ACYCLIC
+      DIRECTED_ACYCLIC,
     }
 
     inline fun <reified E : Edge<String>> Graph<String, E>.check(type: GraphType) {

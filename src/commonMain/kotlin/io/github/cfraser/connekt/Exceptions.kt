@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+@file:Suppress("ObjectInheritsException")
+
 package io.github.cfraser.connekt
 
 /**
@@ -36,7 +38,7 @@ class NoPathExists(source: Any, target: Any) :
     GraphException("No path from $source to $target exists")
 
 /** [LoopException] is thrown when an edge connects a vertex to itself. */
-data object LoopException : GraphException("An edge in cannot connect a vertex to itself")
+data object LoopException : GraphException("An edge cannot connect a vertex to itself")
 
 /**
  * [AcyclicException] is thrown when a path between the vertices would violate the acyclic

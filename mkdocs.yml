@@ -4,29 +4,25 @@ repo_url: https://github.com/c-fraser/connekt
 site_description: 'Graph data structure for Kotlin'
 site_author: c-fraser
 copyright: 'Copyright &copy; 2022 c-fraser'
+nav:
+  - connekt: index.md
 theme:
   name: 'material'
+  favicon: favicon.ico
+  logo: connekt.png
   icon:
     repo: fontawesome/brands/github
   palette:
-    - media: '(prefers-color-scheme: light)'
-      scheme: default
-      primary: 'blue grey'
-      accent: teal
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - media: '(prefers-color-scheme: dark)'
-      scheme: slate
-      primary: 'blue grey'
-      accent: teal
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+    scheme: default
+    primary: 'blue grey'
+    accent: teal
   features:
     - toc.integrate
     - content.code.copy
     - content.code.select
+    - navigation.tabs.sticky
+extra_css:
+  - extra.css
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true

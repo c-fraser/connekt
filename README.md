@@ -1,4 +1,9 @@
-# connekt
+<div align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" src="docs/connekt-dark.png">
+        <img alt="connekt logo" src="docs/connekt-light.png">
+    </picture>
+</div>
 
 [![Test](https://github.com/c-fraser/connekt/workflows/Test/badge.svg)](https://github.com/c-fraser/connekt/actions)
 [![Release](https://img.shields.io/github/v/release/c-fraser/connekt?logo=github&sort=semver)](https://github.com/c-fraser/connekt/releases)
@@ -33,7 +38,7 @@ flexible graph data structure.
 
 * Flexible `Graph` interface which supports
   multiple [graph types](https://en.wikipedia.org/wiki/Graph_(discrete_mathematics)#Definitions).
-* Vertices and be `Any` type.
+* Vertices can be `Any` type.
 * Edges may contain a `weight` or generic `attributes`.
 * Type-safe builder DSL which validates the graph type constraints.
 * [Depth-first](https://en.wikipedia.org/wiki/Depth-first_search)

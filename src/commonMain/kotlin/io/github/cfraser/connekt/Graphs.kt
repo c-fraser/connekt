@@ -92,7 +92,7 @@ interface Graph<V : Any, E : Edge<V>> {
    *
    * If the graph is weighted, then the [WeightedEdge.weight] is considered in the path calculation.
    *
-   * If there are multiple equivalent shortest paths, then the returned path will be arbitrary
+   * If there are multiple equivalent shortest paths, then the returned path will be arbitrarily
    * selected.
    *
    * @param vertices the source and target vertices

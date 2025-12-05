@@ -13,4 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+plugins { id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0" }
+
 rootProject.name = "connekt"

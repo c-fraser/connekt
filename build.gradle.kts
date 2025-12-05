@@ -17,25 +17,33 @@ import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
 import io.github.gradlenexus.publishplugin.NexusPublishExtension
 import io.gitlab.arturbosch.detekt.Detekt
-import kotlinx.validation.KotlinApiBuildTask
+import kotlin.collections.filter
+import kotlinx.knit.KnitPlugin
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.internal.extensions.stdlib.capitalized
+import org.jetbrains.dokka.base.DokkaBase
+import org.jetbrains.dokka.base.DokkaBaseConfiguration
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.gradle.tasks.KotlinNativeLink
 import org.jetbrains.kotlin.gradle.tasks.KotlinTest
 import org.jreleaser.gradle.plugin.JReleaserExtension
 import org.jreleaser.model.Active
 
-buildscript { dependencies { classpath(libs.knit) } }
+buildscript {
+  repositories { mavenCentral() }
+  dependencies { classpath(libs.knit) }
+  configurations.classpath {
+    resolutionStrategy {
+      // See https://github.com/jreleaser/jreleaser/issues/1643
+      force("org.eclipse.jgit:org.eclipse.jgit:5.13.0.202109080827-r")
+    }
+  }
+}
 
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.dokka)
-  alias(libs.plugins.kotest.multiplatform)
   alias(libs.plugins.spotless)
   alias(libs.plugins.detekt)
   alias(libs.plugins.nexus.publish)
@@ -47,7 +55,7 @@ plugins {
   signing
 }
 
-apply(plugin = "kotlinx-knit")
+apply<KnitPlugin>()
 
 allprojects {
   group = "io.github.c-fraser"
@@ -58,19 +66,32 @@ allprojects {
 
 kotlin {
   jvm { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
-  js().nodejs()
-  js().browser()
-  linuxX64()
-  mingwX64()
-  macosX64()
-  macosArm64()
-
-  compilerOptions {
-    // FIXME: kotest generating invalid IR, preventing enabling this
-    allWarningsAsErrors.set(false)
+  js {
+    browser()
+    nodejs()
   }
+  linuxX64()
+  linuxArm64()
+  mingwX64()
+  macosArm64()
+  macosX64()
+  iosX64()
+  iosArm64()
+  iosSimulatorArm64()
+  watchosDeviceArm64()
+  watchosSimulatorArm64()
+  watchosX64()
+  watchosArm32()
+  watchosArm64()
+  tvosSimulatorArm64()
+  tvosX64()
+  tvosArm64()
+  androidNativeX64()
+  androidNativeX86()
+  androidNativeArm32()
+  androidNativeArm64()
 
-  sourceSets {
+  sourceSets @Suppress("unused") {
     val commonTest by getting {
       dependencies {
         implementation(libs.kotest.assertions.core)
@@ -84,19 +105,6 @@ kotlin {
       }
     }
   }
-}
-
-dokka {
-  moduleName.set(rootProject.name)
-  dokkaSourceSets.commonMain {
-    includes.from("README.md")
-    sourceLink {
-      localDirectory.set(file("src/commonMain/kotlin"))
-      remoteUrl("https://github.com/c-fraser/connekt")
-      remoteLineSuffix.set("#L")
-    }
-  }
-  pluginsConfiguration.html { footerMessage.set("Copyright &copy; 2022 c-fraser") }
 }
 
 val kotlinSourceFiles by lazy {
@@ -205,8 +213,8 @@ publishing {
 configure<NexusPublishExtension> {
   repositories {
     sonatype {
-      nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-      snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+      nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+      snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
       username.set(System.getenv("SONATYPE_USERNAME"))
       password.set(System.getenv("SONATYPE_PASSWORD"))
     }
@@ -246,7 +254,7 @@ configure<JReleaserExtension> {
   }
 }
 
-tasks {
+tasks @Suppress("unused") {
   withType<Jar> { manifest { attributes("Automatic-Module-Name" to "io.github.cfraser.connekt") } }
 
   withType<Test> {
@@ -258,7 +266,13 @@ tasks {
     }
   }
 
-  val setupDocs by creating {
+  withType<DokkaTask> {
+    pluginConfiguration<DokkaBase, DokkaBaseConfiguration> {
+      footerMessage = "Copyright &copy; 2022 c-fraser"
+    }
+  }
+
+  val setupDocs by registering {
     dependsOn(dokkaHtml)
     doLast {
       copy {
@@ -275,10 +289,16 @@ tasks {
               // remove inline TOC
               .replace(
                   Regex(
-                      "<!--- TOC -->[\\s\\S]*<!--- END -->[\\n|\\r|\\n\\r]", RegexOption.MULTILINE),
-                  ""))
+                      "<!--- TOC -->[\\s\\S]*<!--- END -->[\\n|\\r|\\n\\r]",
+                      RegexOption.MULTILINE,
+                  ),
+                  "",
+              )
+      )
     }
   }
+
+  withType<KotlinTest> { failOnNoDiscoveredTests.set(false) }
 
   val knit by getting
 
@@ -290,26 +310,19 @@ tasks {
 
   val detekt by getting(Detekt::class)
 
-  withType<SpotlessTask> {
-    mustRunAfter(
-        *listOf(
-                withType<KotlinCompile>(),
-                withType<KotlinNativeLink>(),
-                withType<KotlinApiBuildTask>(),
-                withType<Test>(),
-                withType<KotlinTest>())
-            .flatten()
-            .plus(
-                listOf(
-                    ":compileCommonMainKotlinMetadata",
-                    ":transformCommonMainDependenciesMetadata",
-                    ":transformNativeMainDependenciesMetadata",
-                    ":allTests",
-                    ":jsTest"))
-            .toTypedArray())
-  }
-
-  val spotlessKotlin by getting(SpotlessTask::class)
+  val spotlessKotlin by
+      getting(SpotlessTask::class) {
+        mustRunAfter(
+            provider {
+              filter { task ->
+                task.name.contains("compile", ignoreCase = true) ||
+                    task.name.contains("metadata", ignoreCase = true) ||
+                    task.name.contains("commonMain", ignoreCase = true) ||
+                    task.name.contains("test", ignoreCase = true)
+              }
+            }
+        )
+      }
   val spotlessKotlinGradle by getting(SpotlessTask::class) { mustRunAfter(spotlessKotlin) }
 
   spotlessApply { dependsOn(detekt) }
