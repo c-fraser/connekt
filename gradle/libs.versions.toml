@@ -17,7 +17,7 @@ dokka = { id = "org.jetbrains.dokka", version = "1.9.20" }
 spotless = { id = "com.diffplug.spotless", version = "8.0.0" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.8" }
 nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version = "2.0.0" }
-jreleaser = { id = "org.jreleaser", version = "1.21.0" }
+jreleaser = { id = "org.jreleaser", version = "1.20.0" }
 dependency-versions = { id = "com.github.ben-manes.versions", version = "0.53.0" }
 kover = { id = "org.jetbrains.kotlinx.kover", version = "0.9.3" }
 compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.18.1" }
